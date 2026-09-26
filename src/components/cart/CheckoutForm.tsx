@@ -11,6 +11,7 @@ import { newOrderNumber, saveOrder } from "@/lib/orders";
 import { cn, formatPrice } from "@/lib/utils";
 import { shippingFacts } from "@/content/site";
 import { useCart } from "./CartProvider";
+import { LoginPrompt } from "@/components/account/LoginPrompt";
 
 type Errors = Partial<Record<keyof CheckoutDetails, string>>;
 
@@ -116,7 +117,8 @@ export function CheckoutForm() {
     <form noValidate onSubmit={onSubmit} className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.85fr)] lg:gap-14">
       <div className="space-y-10">
         <fieldset className="rounded-[2rem] bg-cream-50 p-7 shadow-card md:p-9">
-          <legend className="float-left mb-6 w-full font-serif text-2xl text-forest-900">Contact</legend>
+          <legend className="float-left mb-2 w-full font-serif text-2xl text-forest-900">Contact</legend>
+          <LoginPrompt className="clear-both mb-6" />
           <div className="clear-both grid gap-5 sm:grid-cols-2">
             {field("email", "Email", { type: "email", autoComplete: "email", required: true })}
             {field("phone", "Mobile number", { type: "tel", autoComplete: "tel", inputMode: "tel", required: true, placeholder: "10-digit mobile" })}

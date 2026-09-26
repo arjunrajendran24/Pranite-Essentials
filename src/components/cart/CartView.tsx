@@ -11,6 +11,7 @@ import { formatPrice } from "@/lib/utils";
 import { shippingFacts } from "@/content/site";
 import { useCart } from "./CartProvider";
 import { QuantitySelector } from "./QuantitySelector";
+import { LoginPrompt } from "@/components/account/LoginPrompt";
 
 /** Full cart page. */
 export function CartView() {
@@ -29,6 +30,7 @@ export function CartView() {
         <ButtonLink href="/catalog" icon="arrow-right" className="mt-8">
           Continue shopping
         </ButtonLink>
+        <LoginPrompt className="mt-6" />
       </div>
     );
   }
@@ -110,6 +112,7 @@ export function CartView() {
           <ButtonLink href="/checkout" size="lg" icon="arrow-right" className="mt-7 w-full">
             Checkout
           </ButtonLink>
+          <LoginPrompt className="mt-4 text-center" />
           <ul className="mt-6 space-y-2 text-sm text-ink-500">
             <li className="flex items-center gap-2">
               <Icon name="truck" className="size-4 text-forest-600" /> {shippingFacts.dispatch}

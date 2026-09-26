@@ -115,6 +115,12 @@ export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => vo
           </nav>
 
           <div className="container-page relative space-y-2 pb-10 text-sm text-ink-600">
+            <a
+              href={site.accountUrl}
+              className="mb-4 inline-flex items-center gap-2 rounded-full border border-forest-700/20 px-5 py-2.5 font-semibold text-forest-800"
+            >
+              <Icon name="user" className="size-4" /> Log in / My account
+            </a>
             <a href={`mailto:${site.email}`} className="flex items-center gap-2">
               <Icon name="mail" className="size-4 text-forest-600" /> {site.email}
             </a>

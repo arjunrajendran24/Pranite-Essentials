@@ -13,6 +13,7 @@ import { EASE_ORGANIC, formatPrice } from "@/lib/utils";
 import { shippingFacts } from "@/content/site";
 import { useCart } from "./CartProvider";
 import { QuantitySelector } from "./QuantitySelector";
+import { LoginPrompt } from "@/components/account/LoginPrompt";
 
 /**
  * Slide-in cart. Modal dialog semantics: focus moves in on open, Tab is
@@ -114,6 +115,7 @@ export function CartDrawer() {
                 <ButtonLink href="/catalog" icon="arrow-right" onClick={close}>
                   Continue shopping
                 </ButtonLink>
+                <LoginPrompt className="mt-2" onNavigate={close} />
               </div>
             ) : (
               <>
@@ -180,6 +182,7 @@ export function CartDrawer() {
                       View cart
                     </ButtonLink>
                   </div>
+                  <LoginPrompt className="mt-4 text-center" onNavigate={close} />
                 </div>
               </>
             )}

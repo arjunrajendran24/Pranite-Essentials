@@ -25,6 +25,14 @@ export const site = {
   },
   instagram: "https://www.instagram.com/green_pranite",
   instagramHandle: "@green_pranite",
+
+  /**
+   * Customer login. The live store uses Shopify's *new customer accounts*:
+   * passwordless sign-in (email + one-time code, or "Continue with Shop") on a
+   * Shopify-hosted page, with orders and addresses managed there too.
+   * 76863570134 is the store's Shopify shop ID.
+   */
+  accountUrl: (process.env.NEXT_PUBLIC_SHOPIFY_ACCOUNT_URL ?? "https://shopify.com/76863570134/account").replace(/\/$/, ""),
 } as const;
 
 export const mainNav = [
@@ -41,6 +49,7 @@ export const footerNav = {
     { href: "/products/tanora-bathing-bar-bright-hydrating-skin", label: "Tanora Bathing Bar" },
     { href: "/track-order", label: "Track your order" },
     { href: "/cart", label: "Your cart" },
+    { href: "/account", label: "My account" },
   ],
   company: [
     { href: "/about", label: "About us" },

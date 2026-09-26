@@ -180,6 +180,31 @@ The cart is client-side (React context, saved in `localStorage`, synced across t
 Terms respected in the UI: prepaid only (no COD), free standard shipping,
 dispatch in 1–3 business days.
 
+## Customer accounts (login)
+
+Mirrors the live store, which uses **Shopify's new customer accounts**: there
+are no passwords. Customers sign in on a Shopify-hosted page with their email
+and a one-time code (or "Continue with Shop"), and view orders and addresses
+there.
+
+- The header **account icon**, the mobile menu's "Log in / My account", the footer's
+  "My account", and the "Have an account? Log in to check out faster." prompts
+  (cart drawer, cart page, checkout) all point to
+  `NEXT_PUBLIC_SHOPIFY_ACCOUNT_URL` (default `https://shopify.com/76863570134/account`).
+- `/account`, `/account/login`, `/account/register`, `/customer_authentication/*`
+  and `/account/<anything>` redirect there, so old store links and the
+  "View your order" links in Shopify notification emails keep working after the move.
+- **Look & feel:** the sign-in page can't be embedded or rebuilt in this site (it
+  would be the same even with a Hydrogen/headless setup), but you can brand it in
+  Shopify admin → Settings → Customer accounts → Customize (logo, colours).
+  The live one currently uses Shopify's default purple, so it's worth doing.
+- **Next step, if wanted:** to show the signed-in customer's name and orders
+  *inside* this site, connect the
+  [Customer Account API](https://shopify.dev/docs/api/customer): install the
+  Headless channel in Shopify, create a client ID, register
+  `https://<domain>/account/callback` as a callback URL, then add an OAuth (PKCE)
+  login/callback route and a session cookie. The sign-in page still stays on Shopify.
+
 ## Track order
 
 Orders placed through the demo checkout are found locally and show a status

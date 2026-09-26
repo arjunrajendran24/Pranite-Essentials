@@ -88,6 +88,15 @@ export function Header() {
                 <Icon name="package" className="size-[1.1rem]" />
                 Track order
               </Link>
+              {/* Shopify-hosted customer accounts — same as the live store's account icon */}
+              <a
+                href={site.accountUrl}
+                className="grid size-11 place-items-center rounded-full text-forest-800 transition-colors hover:bg-forest-700/8"
+                aria-label="Account — log in or view your orders"
+                title="Account"
+              >
+                <Icon name="user" className="size-[1.35rem]" />
+              </a>
               <button
                 type="button"
                 onClick={open}
