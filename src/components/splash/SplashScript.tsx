@@ -6,7 +6,9 @@ import { SPLASH_KEY } from "@/lib/splash";
  *  2. flags low-power devices (`html[data-lite]`: Save-Data, ≤2 GB RAM or
  *     <4 CPU cores) so heavy scroll effects are skipped there;
  *  3. decides whether the intro splash plays — homepage only, once per browser
- *     session, never for people who prefer reduced motion.
+ *     session, never for people who prefer reduced motion;
+ *  4. on touch screens, gives a touched `.sprig-host` the `is-breezy` class for
+ *     one short gust, so the leaf sprigs sway there too (no hover on phones).
  */
 const code = `(function(){try{
 var d=document.documentElement;d.classList.add('js');
@@ -16,6 +18,7 @@ var rm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').
 var seen=sessionStorage.getItem('${SPLASH_KEY}');
 if(location.pathname==='/'&&!rm&&!seen)d.setAttribute('data-splash','1');
 sessionStorage.setItem('${SPLASH_KEY}','1');
+document.addEventListener('touchstart',function(e){var h=e.target.closest&&e.target.closest('.sprig-host');if(!h)return;h.classList.add('is-breezy');clearTimeout(h.__breeze);h.__breeze=setTimeout(function(){h.classList.remove('is-breezy')},2400)},{passive:true});
 }catch(e){}})();`;
 
 export function SplashScript() {

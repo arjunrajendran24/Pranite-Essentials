@@ -308,6 +308,65 @@ html[data-splash] body { overflow: hidden; }
    is fully readable without JavaScript. */
 html.js [data-gsap="hide"] { visibility: hidden; }
 
+/* ==========================================================================
+   Leaf breeze — <LeafSprig> leaves ruffle while a `.sprig-host` ancestor is
+   hovered, or for a short gust after it is touched on phones.
+   Each leaf rotates by  --sway (keyframed, -1…1) × --breeze (0…1) × --amp.
+   --breeze eases up on hover and back down on leave, so the wind builds and
+   dies away instead of snapping; the animation itself only runs while the
+   host is hovered, and at rest every leaf sits exactly where it was drawn.
+   ========================================================================== */
+@property --breeze {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --sway {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+.sprig {
+  transition: --breeze 1.4s var(--ease-organic);
+}
+.sprig-plant,
+.sprig-leaf {
+  transform-box: view-box;
+  transform: rotate(calc(var(--sway) * var(--breeze) * var(--amp)));
+  animation: leaf-breeze var(--dur) ease-in-out var(--delay) infinite paused;
+}
+/* The stem barely bends, pivoting at its base; the leaves ride along. */
+.sprig-plant {
+  transform-origin: 60px 156px;
+  --amp: 1.2deg;
+  --dur: 4.6s;
+  --delay: -1.3s;
+}
+
+@media (hover: hover) {
+  .sprig-host:hover .sprig {
+    --breeze: 1;
+    transition-duration: 0.9s;
+  }
+  .sprig-host:hover :is(.sprig-plant, .sprig-leaf) { animation-play-state: running; }
+}
+/* Touch screens: a tap in the host adds .is-breezy for one short gust (head script). */
+.sprig-host.is-breezy .sprig {
+  --breeze: 1;
+  transition-duration: 0.9s;
+}
+.sprig-host.is-breezy :is(.sprig-plant, .sprig-leaf) { animation-play-state: running; }
+
+/* A gust, a lull, a smaller gust: irregular, so it reads as wind, not a metronome. */
+@keyframes leaf-breeze {
+  0%, 100% { --sway: 0; }
+  18% { --sway: 1; }
+  38% { --sway: -0.45; }
+  58% { --sway: 0.8; }
+  78% { --sway: -0.25; }
+}
+
 /* Low-power devices (set by the head script): drop the costliest effects. */
 html[data-lite] .lite-no-blur { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 html[data-lite] .lite-no-anim { animation: none !important; }
@@ -323,6 +382,7 @@ html[data-lite] .lite-no-anim { animation: none !important; }
     scroll-behavior: auto !important;
   }
   .draw-icon :is(path, circle, line, polyline, ellipse, rect) { stroke-dashoffset: 0; }
+  .sprig-host .sprig { --breeze: 0 !important; }
 }
 
 /* Splash starting pose (GSAP animates from here). */

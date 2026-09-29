@@ -129,7 +129,7 @@ export function Hero({ productHref }: { productHref: string }) {
               <SingleLeaf className="w-full rotate-[20deg]" />
             </div>
           </div>
-          <div data-float data-depth="1.2" className="absolute -bottom-12 -left-8 h-48 md:-left-16 md:h-64" aria-hidden="true">
+          <div data-float data-depth="1.2" className="sprig-host absolute -bottom-12 -left-8 h-48 md:-left-16 md:h-64" aria-hidden="true">
             <LeafSprig className="h-full w-auto" />
           </div>
           <div

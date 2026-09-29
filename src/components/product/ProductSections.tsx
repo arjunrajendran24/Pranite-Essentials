@@ -49,7 +49,7 @@ export function BenefitsSection({ content }: { content: ProductContent }) {
 export function MasterBlend({ content }: { content: ProductContent }) {
   const [title, sub] = content.story.blendTitle.split(":");
   return (
-    <section aria-labelledby="blend-title" className="relative mx-2 overflow-hidden rounded-[2.5rem] bg-sage-100 py-24 md:mx-5 md:rounded-[4rem] md:py-32">
+    <section aria-labelledby="blend-title" className="sprig-host relative mx-2 overflow-hidden rounded-[2.5rem] bg-sage-100 py-24 md:mx-5 md:rounded-[4rem] md:py-32">
       <LeafSprig className="pointer-events-none absolute -left-10 bottom-0 h-96 w-auto opacity-50" />
       <div className="container-page relative grid gap-14 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
         <div className="lg:sticky lg:top-32 lg:self-start">

@@ -62,14 +62,15 @@ export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => vo
           role="dialog"
           aria-modal="true"
           aria-label="Menu"
-          className="fixed inset-0 z-[90] flex flex-col overflow-hidden bg-cream-100 lg:hidden"
+          className="sprig-host fixed inset-0 z-[90] flex flex-col overflow-hidden bg-cream-100 lg:hidden"
           initial={{ opacity: 0, y: -24 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -16 }}
           transition={{ duration: 0.5, ease: EASE_ORGANIC }}
         >
-          <LeafSprig className="pointer-events-none absolute -bottom-10 -right-8 h-80 w-auto opacity-60" />
-          <div className="container-page flex h-[4.5rem] items-center justify-between">
+          {/* Decoration sits behind everything (the content below is positioned, so it paints on top). */}
+          <LeafSprig className="pointer-events-none absolute -bottom-12 -right-10 h-64 w-auto opacity-60 sm:-bottom-10 sm:-right-8 sm:h-80" />
+          <div className="container-page relative flex h-[4.5rem] shrink-0 items-center justify-between">
             <Logo className="h-8" />
             <button
               ref={closeRef}
@@ -82,51 +83,57 @@ export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => vo
             </button>
           </div>
 
-          <nav aria-label="Mobile" className="container-page flex-1 pt-8">
-            <m.ul
-              className="space-y-1"
-              initial="hidden"
-              animate="show"
-              variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } } }}
-            >
-              {links.map((item) => (
-                <m.li
-                  key={item.href}
-                  variants={{
-                    hidden: { opacity: 0, y: 18 },
-                    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE_ORGANIC } },
-                  }}
+          {/* Scrolls on short screens (small phones, landscape, browser toolbar showing) so the
+              account and contact links are always reachable; on tall screens they sit at the bottom. */}
+          <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <div className="flex min-h-full flex-col">
+              <nav aria-label="Mobile" className="container-page flex-1 pt-8 [@media(max-height:700px)]:pt-3">
+                <m.ul
+                  className="space-y-1"
+                  initial="hidden"
+                  animate="show"
+                  variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } } }}
                 >
-                  <Link
-                    href={item.href}
-                    onClick={onClose}
-                    aria-current={pathname === item.href ? "page" : undefined}
-                    className="group flex items-center justify-between border-b border-forest-700/10 py-4 font-serif text-[2rem] leading-tight text-forest-900 aria-[current=page]:text-forest-600"
-                  >
-                    {item.label}
-                    <Icon
-                      name="arrow-right"
-                      className="size-5 text-forest-600 opacity-50 transition-transform group-hover:translate-x-1"
-                    />
-                  </Link>
-                </m.li>
-              ))}
-            </m.ul>
-          </nav>
+                  {links.map((item) => (
+                    <m.li
+                      key={item.href}
+                      variants={{
+                        hidden: { opacity: 0, y: 18 },
+                        show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE_ORGANIC } },
+                      }}
+                    >
+                      <Link
+                        href={item.href}
+                        onClick={onClose}
+                        aria-current={pathname === item.href ? "page" : undefined}
+                        className="group flex items-center justify-between gap-4 border-b border-forest-700/10 py-4 font-serif text-[clamp(1.75rem,8.4vw,2rem)] leading-tight text-forest-900 aria-[current=page]:text-forest-600 [@media(max-height:700px)]:py-2.5"
+                      >
+                        {item.label}
+                        <Icon
+                          name="arrow-right"
+                          className="size-5 shrink-0 text-forest-600 opacity-50 transition-transform group-hover:translate-x-1"
+                        />
+                      </Link>
+                    </m.li>
+                  ))}
+                </m.ul>
+              </nav>
 
-          <div className="container-page relative space-y-2 pb-10 text-sm text-ink-600">
-            <a
-              href={site.accountUrl}
-              className="mb-4 inline-flex items-center gap-2 rounded-full border border-forest-700/20 px-5 py-2.5 font-semibold text-forest-800"
-            >
-              <Icon name="user" className="size-4" /> Log in / My account
-            </a>
-            <a href={`mailto:${site.email}`} className="flex items-center gap-2">
-              <Icon name="mail" className="size-4 text-forest-600" /> {site.email}
-            </a>
-            <a href={site.phoneHref} className="flex items-center gap-2">
-              <Icon name="phone" className="size-4 text-forest-600" /> {site.phone}
-            </a>
+              <div className="container-page flex flex-col items-start pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 text-sm text-ink-600 [@media(max-height:700px)]:pt-5">
+                <a
+                  href={site.accountUrl}
+                  className="mb-3 inline-flex items-center gap-2 rounded-full border border-forest-700/20 bg-cream-100 px-5 py-2.5 font-semibold text-forest-800"
+                >
+                  <Icon name="user" className="size-4" /> Log in / My account
+                </a>
+                <a href={`mailto:${site.email}`} className="flex max-w-full items-center gap-2 py-1.5">
+                  <Icon name="mail" className="size-4 shrink-0 text-forest-600" /> <span className="truncate">{site.email}</span>
+                </a>
+                <a href={site.phoneHref} className="flex items-center gap-2 py-1.5">
+                  <Icon name="phone" className="size-4 shrink-0 text-forest-600" /> {site.phone}
+                </a>
+              </div>
+            </div>
           </div>
         </m.div>
       )}

@@ -32,6 +32,12 @@ export function OrangeSlice({ className }: Props) {
   );
 }
 
+/**
+ * Stem with five leaves. Its leaves ruffle in a soft breeze while a parent
+ * with the `sprig-host` class is hovered (touched on phones); see "Leaf
+ * breeze" in globals.css. Each leaf pivots where it meets the stem and has its
+ * own strength and rhythm, so they never move in lockstep.
+ */
 export function LeafSprig({ className }: Props) {
   return (
     <svg
@@ -42,18 +48,35 @@ export function LeafSprig({ className }: Props) {
       strokeWidth="1.3"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={cn("overflow-visible", className)}
+      className={cn("sprig overflow-visible", className)}
     >
-      <path d="M60 156C58 120 62 70 84 8" />
-      {[
-        { y: 128, d: "M59.5 128c-14-3-26-14-30-30 16 1 27 12 30 30Z" },
-        { y: 104, d: "M60.5 104c13-4 24-16 27-32-15 2-26 14-27 32Z" },
-        { y: 82, d: "M63 82c-14-4-24-16-26-31 15 2 25 13 26 31Z" },
-        { y: 58, d: "M67 58c12-5 21-17 22-31-13 3-22 14-22 31Z" },
-        { y: 38, d: "M72 38c-11-5-18-15-18-27 12 3 18 12 18 27Z" },
-      ].map((l) => (
-        <path key={l.y} d={l.d} fill="var(--color-sage-200)" fillOpacity=".55" />
-      ))}
+      <g className="sprig-plant">
+        <path d="M60 156C58 120 62 70 84 8" />
+        {[
+          // x/y: where the leaf joins the stem. Upper leaves are lighter, so they swing more and faster.
+          { x: 59.5, y: 128, amp: 5, dur: 3.4, delay: -0.6, d: "M59.5 128c-14-3-26-14-30-30 16 1 27 12 30 30Z" },
+          { x: 60.5, y: 104, amp: 6, dur: 2.9, delay: -1.7, d: "M60.5 104c13-4 24-16 27-32-15 2-26 14-27 32Z" },
+          { x: 63, y: 82, amp: 7, dur: 3.2, delay: -0.2, d: "M63 82c-14-4-24-16-26-31 15 2 25 13 26 31Z" },
+          { x: 67, y: 58, amp: 8, dur: 2.6, delay: -1.1, d: "M67 58c12-5 21-17 22-31-13 3-22 14-22 31Z" },
+          { x: 72, y: 38, amp: 10, dur: 2.3, delay: -2, d: "M72 38c-11-5-18-15-18-27 12 3 18 12 18 27Z" },
+        ].map((l) => (
+          <path
+            key={l.y}
+            d={l.d}
+            fill="var(--color-sage-200)"
+            fillOpacity=".55"
+            className="sprig-leaf"
+            style={
+              {
+                transformOrigin: `${l.x}px ${l.y}px`,
+                "--amp": `${l.amp}deg`,
+                "--dur": `${l.dur}s`,
+                "--delay": `${l.delay}s`,
+              } as React.CSSProperties
+            }
+          />
+        ))}
+      </g>
     </svg>
   );
 }

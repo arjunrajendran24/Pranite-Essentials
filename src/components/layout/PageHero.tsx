@@ -20,7 +20,7 @@ export function PageHero({
   children?: React.ReactNode;
 }) {
   return (
-    <section className={cn("wash-botanical relative overflow-hidden", className)}>
+    <section className={cn("sprig-host wash-botanical relative overflow-hidden", className)}>
       <LeafSprig className="pointer-events-none absolute -right-6 top-6 hidden h-72 w-auto rotate-[18deg] opacity-70 md:block" />
       <SingleLeaf className="pointer-events-none absolute bottom-10 right-[22%] hidden w-10 rotate-[40deg] opacity-80 lg:block" />
       <div className="container-page relative pb-16 pt-8 md:pb-24 md:pt-12">

@@ -7,7 +7,7 @@ import { footerNav, site } from "@/content/site";
 
 export function Footer() {
   return (
-    <footer className="relative mt-24 overflow-hidden rounded-t-[2.5rem] bg-forest-900 text-sage-200 md:mt-32 md:rounded-t-[4rem]">
+    <footer className="sprig-host relative mt-24 overflow-hidden rounded-t-[2.5rem] bg-forest-900 text-sage-200 md:mt-32 md:rounded-t-[4rem]">
       <LeafSprig className="pointer-events-none absolute -right-10 -top-6 h-[26rem] w-auto rotate-12 opacity-[0.07] [&_path]:stroke-cream-50" />
 
       <div className="container-page relative pb-10 pt-16 md:pt-24">
