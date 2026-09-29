@@ -31,7 +31,7 @@ export function TrackOrderBand() {
             <label htmlFor="band-order" className="field-label">
               Order number
             </label>
-            <input id="band-order" name="order" required className="field" placeholder="e.g. #PE123456" autoComplete="off" />
+            <input id="band-order" name="order" required className="field" placeholder="e.g. #1001" autoComplete="off" />
           </div>
           <div>
             <label htmlFor="band-email" className="field-label">

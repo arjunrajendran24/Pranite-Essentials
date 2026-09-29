@@ -75,47 +75,53 @@ export function ProductGallery({ images, name }: { images: ProductImage[]; name:
           </m.div>
         </AnimatePresence>
 
-        <div className="pointer-events-none absolute inset-x-3 top-1/2 flex -translate-y-1/2 justify-between opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
-          <button
-            type="button"
-            onClick={() => go(index - 1)}
-            className="pointer-events-auto grid size-11 place-items-center rounded-full bg-cream-50/90 text-forest-800 shadow-card transition-transform hover:scale-105"
-            aria-label="Previous image"
-          >
-            <Icon name="chevron-left" />
-          </button>
-          <button
-            type="button"
-            onClick={() => go(index + 1)}
-            className="pointer-events-auto grid size-11 place-items-center rounded-full bg-cream-50/90 text-forest-800 shadow-card transition-transform hover:scale-105"
-            aria-label="Next image"
-          >
-            <Icon name="chevron-right" />
-          </button>
-        </div>
-        <p className="absolute bottom-4 right-4 rounded-full bg-cream-50/90 px-3 py-1 text-xs font-semibold tabular-nums text-ink-700" aria-live="polite">
-          {index + 1} / {count}
-        </p>
+        {count > 1 && (
+          <>
+            <div className="pointer-events-none absolute inset-x-3 top-1/2 flex -translate-y-1/2 justify-between opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+              <button
+                type="button"
+                onClick={() => go(index - 1)}
+                className="pointer-events-auto grid size-11 place-items-center rounded-full bg-cream-50/90 text-forest-800 shadow-card transition-transform hover:scale-105"
+                aria-label="Previous image"
+              >
+                <Icon name="chevron-left" />
+              </button>
+              <button
+                type="button"
+                onClick={() => go(index + 1)}
+                className="pointer-events-auto grid size-11 place-items-center rounded-full bg-cream-50/90 text-forest-800 shadow-card transition-transform hover:scale-105"
+                aria-label="Next image"
+              >
+                <Icon name="chevron-right" />
+              </button>
+            </div>
+            <p className="absolute bottom-4 right-4 rounded-full bg-cream-50/90 px-3 py-1 text-xs font-semibold tabular-nums text-ink-700" aria-live="polite">
+              {index + 1} / {count}
+            </p>
+          </>
+        )}
       </div>
 
-      <ul className="mt-4 flex gap-3 overflow-x-auto pb-1" aria-label="Choose image">
-        {images.map((img, i) => (
-          <li key={i} className="shrink-0">
-            <button
-              type="button"
-              onClick={() => go(i)}
-              aria-label={`View image ${i + 1} of ${count}`}
-              aria-current={i === index ? "true" : undefined}
-              className={cn(
-                "relative block size-[4.5rem] overflow-hidden rounded-2xl bg-cream-50 ring-offset-2 ring-offset-cream-100 transition-[box-shadow,opacity,transform] duration-300 md:size-20",
-                i === index ? "ring-2 ring-forest-600" : "opacity-70 hover:scale-[1.03] hover:opacity-100",
-              )}
-            >
-              <Image src={img.src} alt="" fill sizes="80px" className={img.fit === "cover" ? "object-cover" : "object-contain"} />
-            </button>
-          </li>
-        ))}
-      </ul>
+      {count > 1 && (
+        <ul className="mt-4 flex gap-3 overflow-x-auto pb-1" aria-label="Choose image">
+          {images.map((img, i) => (
+            <li key={i} className="shrink-0">
+              <button
+                type="button"
+                onClick={() => go(i)}
+                aria-label={`View image ${i + 1} of ${count}`}
+                aria-current={i === index ? "true" : undefined}
+                className={cn(
+                  "relative block size-[4.5rem] overflow-hidden rounded-2xl bg-cream-50 ring-offset-2 ring-offset-cream-100 transition-[box-shadow,opacity,transform] duration-300 md:size-20",
+                  i === index ? "ring-2 ring-forest-600" : "opacity-70 hover:scale-[1.03] hover:opacity-100",
+                )}
+              >
+                <Image src={img.src} alt="" fill sizes="80px" className={img.fit === "cover" ? "object-cover" : "object-contain"} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

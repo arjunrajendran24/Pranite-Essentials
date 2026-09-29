@@ -4,10 +4,10 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { InViewClass } from "@/components/motion/InViewClass";
 import { LeafSprig, OrangeSlice } from "@/components/decor/Botanicals";
-import type { Product } from "@/lib/catalog";
+import type { ProductContent } from "@/content/products";
 
 /** Key benefits — six line icons that draw themselves in as the grid appears. */
-export function BenefitsSection({ product }: { product: Product }) {
+export function BenefitsSection({ content }: { content: ProductContent }) {
   return (
     <section aria-labelledby="benefits-title" className="py-24 md:py-32">
       <div className="container-page">
@@ -23,7 +23,7 @@ export function BenefitsSection({ product }: { product: Product }) {
         />
         <InViewClass amount={0.2}>
           <RevealGroup as="ul" className="mt-16 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5" stagger={0.08}>
-            {product.benefits.map((b) => (
+            {content.benefits.map((b) => (
               <RevealItem
                 as="li"
                 key={b.title}
@@ -46,8 +46,8 @@ export function BenefitsSection({ product }: { product: Product }) {
 }
 
 /** "Where Nature Meets Science: The Master Blend" — every key ingredient, explained. */
-export function MasterBlend({ product }: { product: Product }) {
-  const [title, sub] = product.story.blendTitle.split(":");
+export function MasterBlend({ content }: { content: ProductContent }) {
+  const [title, sub] = content.story.blendTitle.split(":");
   return (
     <section aria-labelledby="blend-title" className="relative mx-2 overflow-hidden rounded-[2.5rem] bg-sage-100 py-24 md:mx-5 md:rounded-[4rem] md:py-32">
       <LeafSprig className="pointer-events-none absolute -left-10 bottom-0 h-96 w-auto opacity-50" />
@@ -57,12 +57,12 @@ export function MasterBlend({ product }: { product: Product }) {
             id="blend-title"
             eyebrow={title.trim()}
             title={<span className="italic-accent">{sub?.trim() ?? "The Master Blend"}</span>}
-            lead={product.story.blendIntro}
+            lead={content.story.blendIntro}
           />
         </div>
         <InViewClass amount={0.1}>
           <RevealGroup as="ol" className="grid gap-4 sm:grid-cols-2" stagger={0.09}>
-            {product.ingredients.map((ing, i) => (
+            {content.ingredients.map((ing, i) => (
               <RevealItem
                 as="li"
                 key={ing.name}
@@ -85,8 +85,8 @@ export function MasterBlend({ product }: { product: Product }) {
 }
 
 /** Before & after + "Why Tanora?" list. */
-export function ResultsSection({ product }: { product: Product }) {
-  const ba = product.images.find((img) => /before and after/i.test(img.alt)) ?? product.images[0];
+export function ResultsSection({ content }: { content: ProductContent }) {
+  const ba = content.resultsImage;
   return (
     <section aria-labelledby="results-title" className="py-24 md:py-32">
       <div className="container-page grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
@@ -95,7 +95,7 @@ export function ResultsSection({ product }: { product: Product }) {
             <Image
               src={ba.src}
               alt={ba.alt}
-              placeholder={typeof ba.src === "string" ? "empty" : "blur"}
+              placeholder="blur"
               sizes="(min-width: 1024px) 45vw, 92vw"
               className="h-auto w-full"
             />
@@ -111,10 +111,10 @@ export function ResultsSection({ product }: { product: Product }) {
                 Why <span className="italic-accent text-forest-600">Tanora?</span>
               </>
             }
-            lead={product.story.intro.split(". ").slice(0, 2).join(". ") + "."}
+            lead={content.story.intro.split(". ").slice(0, 2).join(". ") + "."}
           />
           <RevealGroup as="ul" className="mt-10 space-y-3" stagger={0.08}>
-            {product.whyItWorks.map((line) => (
+            {content.whyItWorks.map((line) => (
               <RevealItem as="li" key={line} className="flex items-center gap-4 rounded-2xl border border-forest-700/10 bg-cream-50 px-5 py-4">
                 <span className="grid size-8 shrink-0 place-items-center rounded-full bg-leaf-300/60 text-forest-800">
                   <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -135,7 +135,7 @@ export function ResultsSection({ product }: { product: Product }) {
 }
 
 /** "Pure. Honest. Uncompromising." closing statement with the product claims. */
-export function ClosingBand({ product }: { product: Product }) {
+export function ClosingBand({ content }: { content: ProductContent }) {
   return (
     <section aria-labelledby="closing-title" className="relative mx-2 overflow-hidden rounded-[2.5rem] bg-forest-800 py-24 text-center text-cream-50 md:mx-5 md:rounded-[4rem] md:py-32">
       <div
@@ -148,18 +148,18 @@ export function ClosingBand({ product }: { product: Product }) {
           align="center"
           tone="light"
           eyebrow="Our promise"
-          title={product.story.closingTitle}
-          lead={product.story.closing}
+          title={content.story.closingTitle}
+          lead={content.story.closing}
         />
         <RevealGroup as="ul" className="mt-10 flex flex-wrap justify-center gap-3" stagger={0.08}>
-          {product.story.claims.map((c) => (
+          {content.story.claims.map((c) => (
             <RevealItem as="li" key={c} className="rounded-full border border-cream-50/20 px-5 py-2.5 text-sm font-semibold tracking-wide text-leaf-300">
               {c}
             </RevealItem>
           ))}
         </RevealGroup>
         <Reveal delay={0.2}>
-          <p className="mt-10 font-serif text-lg italic text-sage-200">{product.story.signoff}</p>
+          <p className="mt-10 font-serif text-lg italic text-sage-200">{content.story.signoff}</p>
         </Reveal>
       </div>
     </section>

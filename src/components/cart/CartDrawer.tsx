@@ -13,6 +13,8 @@ import { EASE_ORGANIC, formatPrice } from "@/lib/utils";
 import { shippingFacts } from "@/content/site";
 import { useCart } from "./CartProvider";
 import { QuantitySelector } from "./QuantitySelector";
+import { CheckoutButton } from "./CheckoutButton";
+import { CartNotice } from "./CartNotice";
 import { LoginPrompt } from "@/components/account/LoginPrompt";
 
 /**
@@ -20,7 +22,7 @@ import { LoginPrompt } from "@/components/account/LoginPrompt";
  * trapped inside, Escape closes, focus returns to whatever opened it.
  */
 export function CartDrawer() {
-  const { items, isOpen, close, subtotal, count, setQuantity, remove } = useCart();
+  const { items, isOpen, close, subtotal, count, setQuantity, remove, pending } = useCart();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
@@ -109,6 +111,7 @@ export function CartDrawer() {
 
             {items.length === 0 ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-5 px-8 text-center">
+                <CartNotice className="w-full text-left" />
                 <SingleLeaf className="size-16 opacity-80" />
                 <p className="text-h3 text-forest-900">Your cart is empty</p>
                 <p className="text-ink-500">Discover formulations where nature meets science.</p>
@@ -119,11 +122,12 @@ export function CartDrawer() {
               </div>
             ) : (
               <>
+                <CartNotice className="mx-6 mt-4" />
                 <ul className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
                   <AnimatePresence initial={false}>
                     {items.map((item) => (
                       <m.li
-                        key={item.handle}
+                        key={item.variantId}
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, x: 40 }}
@@ -135,7 +139,7 @@ export function CartDrawer() {
                           className="relative size-24 shrink-0 overflow-hidden rounded-2xl bg-sand-200"
                           onClick={close}
                         >
-                          <Image src={item.image} alt={item.imageAlt} fill sizes="96px" className="object-cover" />
+                          {item.image && <Image src={item.image} alt={item.imageAlt} fill sizes="96px" className="object-cover" />}
                         </Link>
                         <div className="flex min-w-0 flex-1 flex-col">
                           <div className="flex items-start justify-between gap-3">
@@ -149,12 +153,12 @@ export function CartDrawer() {
                             <QuantitySelector
                               size="sm"
                               value={item.quantity}
-                              onChange={(q) => setQuantity(item.handle, q)}
+                              onChange={(q) => setQuantity(item.variantId, q)}
                               label={`Quantity for ${item.name}`}
                             />
                             <button
                               type="button"
-                              onClick={() => remove(item.handle)}
+                              onClick={() => remove(item.variantId)}
                               className="link-underline text-sm text-ink-500 hover:text-citrus-700"
                             >
                               Remove
@@ -169,15 +173,15 @@ export function CartDrawer() {
                 <div className="border-t border-forest-700/10 bg-cream-50 px-6 py-6 sm:rounded-bl-[2rem]">
                   <div className="flex items-baseline justify-between">
                     <span className="text-ink-600">Subtotal</span>
-                    <span className="font-serif text-2xl tabular-nums text-forest-900">{formatPrice(subtotal)}</span>
+                    <span className={`font-serif text-2xl tabular-nums text-forest-900 transition-opacity ${pending ? "opacity-60" : ""}`}>
+                      {formatPrice(subtotal)}
+                    </span>
                   </div>
                   <p className="mt-1.5 flex items-center gap-2 text-sm text-ink-500">
                     <Icon name="truck" className="size-4 text-forest-600" /> {shippingFacts.freeShipping}
                   </p>
                   <div className="mt-5 grid gap-3">
-                    <ButtonLink href="/checkout" size="lg" icon="arrow-right">
-                      Checkout
-                    </ButtonLink>
+                    <CheckoutButton />
                     <ButtonLink href="/cart" variant="secondary">
                       View cart
                     </ButtonLink>

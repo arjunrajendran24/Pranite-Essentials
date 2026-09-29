@@ -1,22 +1,18 @@
 /**
  * Catalog data layer.
  *
- * Every page reads products through the async functions at the bottom of this
- * file, never from the array directly. To go headless later, re-implement
- * `getProducts` / `getProduct` against the Shopify Storefront API and map the
- * response onto the `Product` type — no page or component needs to change.
+ * Every page reads products through the async functions below, never from
+ * Shopify directly. Commerce data (title, price, stock, variants, images,
+ * description, SEO) comes from the Shopify Storefront API and is cached for
+ * `PRODUCTS_REVALIDATE_SECONDS`. Editorial sections (benefits, master blend, …)
+ * are merged in from `src/content/products.ts`, matched by Shopify tag.
  */
 import type { StaticImageData } from "next/image";
-
-import lifestyle from "@/assets/images/tanora-lifestyle.jpg";
-import keyBenefits from "@/assets/images/tanora-key-benefits.jpg";
-import keyIngredients from "@/assets/images/tanora-key-ingredients.jpg";
-import beforeAfter from "@/assets/images/tanora-before-after.jpg";
-import bathingBar from "@/assets/images/tanora-bathing-bar.jpg";
-
-export type BenefitIcon = "sun" | "spots" | "pores" | "tone" | "drop" | "feather";
-export type IngredientIcon = "orange" | "molecule" | "flask" | "milk" | "dropper";
-export type BadgeIcon = "sls" | "paraben" | "rabbit" | "shield" | "flask" | "hand";
+import logo from "@/assets/images/pranite-logo.png";
+import { FEATURED_PRODUCT_HANDLE, getProductContent, type ProductContent } from "@/content/products";
+import { getShopifyProduct, getShopifyProducts, lineSubtitle, splitProductTitle } from "@/lib/shopify";
+import type { ShopifyImage, ShopifyProduct } from "@/lib/shopify/types";
+import type { CartProductSnapshot } from "@/components/cart/CartProvider";
 
 export interface ProductImage {
   /** Static import (local, gets width/height + blur for free) or a remote URL. */
@@ -30,7 +26,17 @@ export interface ProductImage {
 
 export interface Money {
   amount: number;
-  currencyCode: "INR";
+  currencyCode: string;
+}
+
+export interface ProductVariant {
+  /** Shopify variant gid — what the cart API adds. */
+  id: string;
+  title: string;
+  sku: string;
+  available: boolean;
+  price: Money;
+  compareAtPrice?: Money;
 }
 
 export interface Product {
@@ -38,177 +44,148 @@ export interface Product {
   handle: string;
   /** Full title as listed on Shopify. */
   title: string;
-  /** Short display name used in headings and cart. */
+  /** Short display name used in headings and cart ("TANORA Bathing Bar"). */
   name: string;
   subtitle: string;
   brand: string;
-  sku: string;
-  /** Shopify variant id — used for cart permalinks to hosted checkout. */
-  shopifyVariantId: string;
-  price: Money;
-  compareAtPrice?: Money;
-  available: boolean;
-  isNew?: boolean;
   tags: string[];
+  /** Small label from Shopify tags ("New", "Best value"), if any. */
+  badge?: string;
+  /** Price of the default variant. */
+  price: Money;
+  /** Original price, only when higher than `price` (shown struck through). */
+  compareAtPrice?: Money;
+  /** True when variants have different prices ("From ₹…"). */
+  priceVaries: boolean;
+  available: boolean;
   images: ProductImage[];
-  /** One-liner used on cards and the homepage highlight. */
+  variants: ProductVariant[];
+  /** The variant preselected on product cards and pages: first in stock, else first. */
+  defaultVariant: ProductVariant;
+  /** Plain-text description and its first sentence or two (cards, homepage). */
+  description: string;
+  descriptionHtml: string;
   summary: string;
-  /** Hero ingredients shown as chips. */
-  heroIngredients: string[];
-  story: {
-    headline: string;
-    intro: string;
-    blendTitle: string;
-    blendIntro: string;
-    closingTitle: string;
-    closing: string;
-    claims: string[];
-    signoff: string;
-  };
-  benefits: { icon: BenefitIcon; title: string; text: string }[];
-  ingredients: { icon: IngredientIcon; name: string; role: string; text: string }[];
-  whyItWorks: string[];
-  howToUse: string[];
-  badges: { icon: BadgeIcon; label: string }[];
   seo: { title: string; description: string };
+  /** Editorial page sections, when this product's line has them. */
+  content?: ProductContent;
 }
 
-const products: Product[] = [
-  {
-    id: "gid://shopify/Product/9448296120534",
-    handle: "tanora-bathing-bar-bright-hydrating-skin",
-    title: "TANORA - BATHING BAR | BRIGHT & HYDRATING SKIN",
-    name: "Tanora Bathing Bar",
-    subtitle: "Bright & Hydrating Skin",
-    brand: "Green Pranite",
-    sku: "950",
-    shopifyVariantId: "50403590144214",
-    price: { amount: 299, currencyCode: "INR" },
-    available: true,
-    isNew: true,
-    tags: ["DETAN", "GLOW", "GLOWING SKIN", "HYDRATING", "PIGMENTATION", "TANORA", "TANOUT"],
-    images: [
-      {
-        src: lifestyle,
-        fit: "cover",
-        alt: "Green Pranite TANORA Bathing Bar box on a wooden bathroom counter beside fresh oranges, curled orange peel and a dish of goat milk.",
-      },
-      {
-        src: keyBenefits,
-        alt: "TANORA key benefits: brightens complexion, fades tan and dark spots, minimizes pores, evens skin tone, deep moisturization, gentle and free-from.",
-      },
-      {
-        src: keyIngredients,
-        alt: "TANORA key ingredients — orange peel, niacinamide, kojic acid dipalmitate, goat milk and orange essential oil — with the reasons to choose Tanora.",
-      },
-      {
-        src: beforeAfter,
-        alt: "Before and after comparison of a forearm: dull, tanned skin before and a more even, glowing tone after using TANORA.",
-      },
-      {
-        src: bathingBar,
-        alt: "TANORA Bathing Bar packaging with SLS-free, paraben-free, for external use and FDA approved marks.",
-      },
-    ],
-    summary:
-      "Experience the ultimate glow. Infused with Niacinamide, Kojic Acid, and natural botanicals for skin that feels as good as it looks.",
-    heroIngredients: ["Orange Peel", "Niacinamide", "Kojic Acid", "Goat Milk"],
-    story: {
-      headline: "Reveal the Glow You Were Born With.",
-      intro:
-        "Your skin works hard every day, battling sun, stress, and environmental impurities that leave it looking tired and dull. It’s time to give back. The Green Pranite TANORA Bathing Bar is a luxurious, restorative daily ritual designed to effortlessly wash away the day's fatigue and stubborn tan. Step out of every shower feeling deeply refreshed, intensely confident, and undeniably radiant.",
-      blendTitle: "Where Nature Meets Science: The Master Blend",
-      blendIntro:
-        "We stripped away the confusion to bring you a transparent, expertly crafted formula. By combining clinical efficacy with pure, natural nourishment, every wash actively transforms your skin.",
-      closingTitle: "Pure. Honest. Uncompromising.",
-      closing:
-        "You deserve premium skincare you can trust implicitly. Designed for daily use on both the face and body, TANORA delivers a dense, spa-like lather that respects your skin's delicate balance.",
-      claims: ["FDA-Approved", "100% Cruelty-Free", "Zero Sulfates & Parabens"],
-      signoff: "Experience the profound confidence of truly healthy, harmonious skin. Real care. Real results.",
-    },
-    benefits: [
-      { icon: "sun", title: "Brightens complexion", text: "Kojic Acid & Niacinamide blend to reduce dullness." },
-      { icon: "spots", title: "Fades tan & dark spots", text: "Kojic Acid targets uneven pigmentation." },
-      { icon: "pores", title: "Minimizes pores", text: "Niacinamide helps refine skin surface." },
-      { icon: "tone", title: "Evens skin tone", text: "Creates a uniform, radiant finish." },
-      { icon: "drop", title: "Deep moisturization", text: "Goat Milk provides lasting hydration." },
-      { icon: "feather", title: "Gentle & free-from", text: "Suitable for all skin, without harsh chemicals." },
-    ],
-    ingredients: [
-      {
-        icon: "orange",
-        name: "Orange Peel Powder",
-        role: "Botanical exfoliant · Vitamin C",
-        text: "A natural botanical exfoliant packed with Vitamin C. It gently buffs away dull, dead skin cells without micro-tears, instantly refining your skin's texture.",
-      },
-      {
-        icon: "molecule",
-        name: "Niacinamide",
-        role: "Refines & evens",
-        text: "Half of a clinically proven powerhouse duo. Niacinamide helps refine the skin surface and works with Kojic Acid to target uneven skin tone.",
-      },
-      {
-        icon: "flask",
-        name: "Kojic Acid Dipalmitate",
-        role: "Targets pigmentation",
-        text: "Together with Niacinamide, it actively targets uneven skin tone, gently fading stubborn pigmentation, dark spots, and daily sun damage to reveal a flawless, luminous canvas.",
-      },
-      {
-        icon: "milk",
-        name: "Pure Goat Milk",
-        role: "Deep moisture",
-        text: "A rich, soothing moisture surge. It deeply hydrates and replenishes your skin's natural barrier, ensuring your face and body feel incredibly soft and supple—never tight or dry.",
-      },
-      {
-        icon: "dropper",
-        name: "Orange Essential Oil",
-        role: "Uplifting botanical",
-        text: "Awaken your senses. This uplifting, zesty botanical infusion energizes your mind and leaves your skin feeling exceptionally fresh and balanced.",
-      },
-    ],
-    whyItWorks: [
-      "Helps cleanse the skin",
-      "Helps reduce the appearance of tan & dullness",
-      "Leaves skin feeling soft & refreshed",
-      "Moisturising care with goat milk",
-      "Gentle for daily use",
-    ],
-    howToUse: [
-      "Wet your face or body with water.",
-      "Work the bar into a dense, spa-like lather between your palms.",
-      "Massage gently over skin, then rinse thoroughly.",
-      "Use daily. For external use only.",
-    ],
-    badges: [
-      { icon: "sls", label: "SLS free" },
-      { icon: "paraben", label: "Paraben free" },
-      { icon: "rabbit", label: "Cruelty free" },
-      { icon: "shield", label: "FDA approved" },
-      { icon: "flask", label: "Lab tested" },
-    ],
-    seo: {
-      title: "TANORA Bathing Bar — Bright & Hydrating Skin",
-      description:
-        "Green Pranite TANORA Bathing Bar with Orange Peel, Niacinamide, Kojic Acid and Goat Milk. Brightens, fades tan & dark spots, deeply moisturizes. SLS & paraben free. ₹299.",
-    },
-  },
+/* ---------------------------------------------------------------------------
+   Shopify → Product
+   --------------------------------------------------------------------------- */
+
+const BADGE_TAGS: [RegExp, string][] = [
+  [/^new$/i, "New"],
+  [/^best ?value$/i, "Best value"],
+  [/^best ?seller$/i, "Bestseller"],
 ];
 
+const money = (m: { amount: string; currencyCode: string }): Money => ({
+  amount: Number(m.amount),
+  currencyCode: m.currencyCode,
+});
+
+function titleCase(s: string) {
+  return s.toLowerCase().replace(/\b\p{L}/gu, (c) => c.toUpperCase());
+}
+
+function summarize(text: string, min = 120) {
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  let out = "";
+  for (const s of sentences) {
+    out = out ? `${out} ${s}` : s;
+    if (out.length >= min) break;
+  }
+  return out;
+}
+
+function truncate(text: string, max = 160) {
+  return text.length <= max ? text : `${text.slice(0, max - 1).replace(/\s+\S*$/, "")}…`;
+}
+
+function toImage(img: ShopifyImage, alt: string, index: number): ProductImage {
+  return {
+    src: img.url,
+    alt: img.altText?.trim() || alt,
+    width: img.width ?? undefined,
+    height: img.height ?? undefined,
+    // Convention: the featured image is a photograph (fills the frame); the rest
+    // are often text-bearing graphics, shown whole.
+    fit: index === 0 ? "cover" : "contain",
+  };
+}
+
+function reshapeProduct(p: ShopifyProduct): Product {
+  const { name, subtitle } = splitProductTitle(p.title);
+  const brand = p.vendor ? titleCase(p.vendor) : "Green Pranite";
+
+  const variants: ProductVariant[] = p.variants.nodes.map((v) => {
+    const price = money(v.price);
+    const compare = v.compareAtPrice ? money(v.compareAtPrice) : undefined;
+    return {
+      id: v.id,
+      title: v.title,
+      sku: v.sku ?? "",
+      available: v.availableForSale,
+      price,
+      compareAtPrice: compare && compare.amount > price.amount ? compare : undefined,
+    };
+  });
+  const defaultVariant = variants.find((v) => v.available) ?? variants[0];
+
+  const label = [name, subtitle].filter(Boolean).join(" — ");
+  const images = p.images.nodes.map((img, i) => toImage(img, i === 0 ? label : `${label}, image ${i + 1}`, i));
+  if (!images.length) images.push({ src: logo, alt: label, fit: "contain" });
+
+  const summary = summarize(p.description);
+
+  return {
+    id: p.id,
+    handle: p.handle,
+    title: p.title,
+    name,
+    subtitle,
+    brand,
+    tags: p.tags,
+    badge: BADGE_TAGS.find(([re]) => p.tags.some((t) => re.test(t)))?.[1],
+    price: defaultVariant.price,
+    compareAtPrice: defaultVariant.compareAtPrice,
+    priceVaries: new Set(variants.map((v) => v.price.amount)).size > 1,
+    available: p.availableForSale,
+    images,
+    variants,
+    defaultVariant,
+    description: p.description,
+    descriptionHtml: p.descriptionHtml,
+    summary,
+    seo: {
+      title: p.seo.title?.trim() || [name, subtitle].filter(Boolean).join(" — "),
+      description: p.seo.description?.trim() || truncate(p.description),
+    },
+    content: getProductContent(p.tags),
+  };
+}
+
+/** Shopify products always have at least one variant; skip any that somehow don't. */
+const hasVariants = (p: ShopifyProduct) => p.variants.nodes.length > 0;
+
 /* ---------------------------------------------------------------------------
-   Data access — async on purpose so a remote source can slot in later.
+   Data access
    --------------------------------------------------------------------------- */
 
 export async function getProducts(): Promise<Product[]> {
-  return products;
+  return (await getShopifyProducts()).filter(hasVariants).map(reshapeProduct);
 }
 
 export async function getProduct(handle: string): Promise<Product | undefined> {
-  return products.find((p) => p.handle === handle);
+  const p = await getShopifyProduct(handle);
+  return p && hasVariants(p) ? reshapeProduct(p) : undefined;
 }
 
-/** The product featured across the homepage. */
-export async function getFeaturedProduct(): Promise<Product> {
-  return products[0];
+/** The product featured across the homepage, or undefined if the store has none. */
+export async function getFeaturedProduct(): Promise<Product | undefined> {
+  return (await getProduct(FEATURED_PRODUCT_HANDLE)) ?? (await getProducts())[0];
 }
 
 /** Resolve an image source to a plain URL (for JSON-LD, cart snapshots, OG tags). */
@@ -217,18 +194,18 @@ export function imageUrl(src: ProductImage["src"]): string {
 }
 
 /**
- * Build the lightweight snapshot the cart stores. Call this in server
- * components and pass the result to client buttons, so client bundles never
- * need to import the catalog itself.
+ * Build the lightweight snapshot the cart shows instantly (before Shopify
+ * confirms). Call this in server components and pass the result to client
+ * buttons, so client bundles never need to import the catalog itself.
  */
-export function toCartItem(product: Product, imageIndex = 0) {
-  const img = product.images[imageIndex] ?? product.images[0];
+export function toCartItem(product: Product, variant: ProductVariant = product.defaultVariant): CartProductSnapshot {
+  const img = product.images[0];
   return {
+    variantId: variant.id,
     handle: product.handle,
-    variantId: product.shopifyVariantId,
     name: product.name,
-    subtitle: product.subtitle,
-    price: product.price.amount,
+    subtitle: lineSubtitle(product.subtitle, variant.title),
+    price: variant.price.amount,
     image: imageUrl(img.src),
     imageAlt: img.alt,
   };

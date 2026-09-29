@@ -7,17 +7,15 @@ import { AnimatePresence } from "motion/react";
 import * as m from "motion/react-m";
 import { Button } from "@/components/ui/Button";
 import { Icon, type IconName } from "@/components/icons/Icons";
-import { findOrder, type LocalOrder } from "@/lib/orders";
-import { formatPrice } from "@/lib/utils";
 import { site } from "@/content/site";
 
-type Result = { kind: "found"; order: LocalOrder } | { kind: "missing"; number: string; email: string } | null;
+type Result = { kind: "missing"; number: string; email: string } | null;
 
 /**
- * Order lookup. Orders placed through this site's built-in checkout are found
- * locally; everything else gets clear next steps (tracking arrives by e-mail
- * and SMS once shipped) and a one-click, pre-filled e-mail to support.
- * To connect a courier/Shopify tracking API, replace `lookup` below.
+ * Order help. Orders are placed on Shopify's checkout, so live status lives in
+ * the shopper's Shopify account (and in the shipping emails/SMS). This form
+ * points there and offers a one-click, pre-filled e-mail to support.
+ * To show status inline, connect the Customer Account API and replace `lookup`.
  */
 export function TrackOrder() {
   const params = useSearchParams();
@@ -26,8 +24,7 @@ export function TrackOrder() {
   const [result, setResult] = useState<Result>(null);
 
   const lookup = (number: string, mail: string) => {
-    const found = findOrder(number, mail);
-    setResult(found ? { kind: "found", order: found } : { kind: "missing", number, email: mail });
+    setResult({ kind: "missing", number, email: mail });
   };
 
   // Arriving from the homepage form: search straight away.
@@ -57,7 +54,7 @@ export function TrackOrder() {
             required
             value={order}
             onChange={(e) => setOrder(e.target.value)}
-            placeholder="e.g. #PE123456"
+            placeholder="e.g. #1001"
             autoComplete="off"
           />
         </div>
@@ -97,45 +94,6 @@ export function TrackOrder() {
             </m.div>
           )}
 
-          {result?.kind === "found" && (
-            <m.div
-              key="found"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="rounded-[2rem] border border-forest-700/10 bg-cream-50 p-7 md:p-10"
-            >
-              <p className="eyebrow">Order #{result.order.number}</p>
-              <h2 className="text-h3 mt-2 text-forest-900">Thank you, {result.order.name.split(" ")[0]}.</h2>
-              <p className="mt-1 text-sm text-ink-500">
-                Placed {new Date(result.order.createdAt).toLocaleDateString("en-IN", { dateStyle: "long" })} ·{" "}
-                {formatPrice(result.order.total)}
-              </p>
-              <ol className="mt-8 space-y-6">
-                {[
-                  { t: "Order placed", d: "We’ve received your order.", done: true },
-                  { t: "Processing", d: "Packed and dispatched within 1–3 business days.", done: false },
-                  { t: "Shipped", d: "Tracking number sent by email & SMS.", done: false },
-                  { t: "Delivered", d: `Usually 3–7 business days to ${result.order.city}.`, done: false },
-                ].map((s, i) => (
-                  <li key={s.t} className="flex gap-4">
-                    <span
-                      className={`mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border text-xs font-bold ${
-                        s.done ? "border-forest-700 bg-forest-700 text-cream-50" : "border-forest-700/25 text-ink-400"
-                      }`}
-                    >
-                      {s.done ? <Icon name="check" className="size-3.5" strokeWidth={2.5} /> : i + 1}
-                    </span>
-                    <div>
-                      <p className={s.done ? "font-semibold text-forest-900" : "font-semibold text-ink-600"}>{s.t}</p>
-                      <p className="text-sm text-ink-500">{s.d}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </m.div>
-          )}
-
           {result?.kind === "missing" && (
             <m.div
               key="missing"
@@ -144,10 +102,20 @@ export function TrackOrder() {
               exit={{ opacity: 0 }}
               className="rounded-[2rem] border border-forest-700/10 bg-cream-50 p-7 md:p-10"
             >
-              <p className="eyebrow">Let us check for you</p>
-              <h2 className="text-h3 mt-2 text-forest-900">We couldn’t find live tracking here yet</h2>
+              <p className="eyebrow">Your order {result.number.startsWith("#") ? result.number : `#${result.number}`}</p>
+              <h2 className="text-h3 mt-2 text-forest-900">See live status in your account</h2>
               <p className="mt-3 leading-relaxed text-ink-500">
-                Your tracking link is sent by email and SMS as soon as your parcel ships. If you can’t find it, send us
+                Sign in with <strong className="text-ink-700">{result.email}</strong> (a one-time code is emailed to
+                you, no password needed) to see every order, its status and tracking.
+              </p>
+              <a
+                href={site.accountUrl}
+                className="mt-6 inline-flex h-12 items-center gap-2 rounded-full bg-forest-700 px-7 font-semibold text-cream-50 transition-colors hover:bg-forest-800"
+              >
+                View my orders <Icon name="arrow-right" className="size-4" />
+              </a>
+              <p className="mt-8 leading-relaxed text-ink-500">
+                Your tracking link is also sent by email and SMS as soon as your parcel ships. Can’t find it? Send us
                 your order number and we’ll look into it right away.
               </p>
               <a

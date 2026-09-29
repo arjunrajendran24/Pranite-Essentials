@@ -16,12 +16,12 @@ premium feel and animation tuned to stay smooth on 3–4-year-old phones.
 
 ```bash
 npm install
-cp .env.example .env.local   # then edit, see "Checkout" below
+cp .env.example .env.local   # then add the Storefront token, see "Shopify (headless)" below
 npm run dev                  # http://localhost:3000
 ```
 
 ```bash
-npm run build && npm start   # production build (all 24 routes prerender statically)
+npm run build && npm start   # production build (product pages prerender from Shopify, refresh every 5 min)
 npm run lint                 # ESLint
 npm run typecheck            # tsc --noEmit
 ```
@@ -34,11 +34,12 @@ open a new tab/private window, or run `sessionStorage.clear()` and reload.
 | Route | Notes |
 |---|---|
 | `/` | Splash → hero → philosophy (brand film) → Discover Tanora → Science of True Glow → marquee → Pranite Standard → track order |
-| `/catalog` | Product grid (with a “more on the way” card while the range is small) |
-| `/products/[handle]` | Gallery, purchase box + mobile sticky add-to-cart, benefits, master blend, before/after, FAQ, Product JSON-LD |
+| `/catalog` | All Shopify products (with a “more on the way” card while the range is small) |
+| `/products/[handle]` | Shopify product: gallery, price (+ sale price), variant picker, purchase box + mobile sticky add-to-cart; editorial sections (benefits, master blend, before/after) when the product has content; FAQ, Product JSON-LD |
 | `/about`, `/contact`, `/faq` | Content migrated from the live site; FAQ emits FAQPage JSON-LD |
 | `/track-order` | Order lookup (see “Track order”) |
-| `/cart`, `/checkout`, `/checkout/success` | Client-side cart → checkout (see “Checkout”) |
+| `/cart` | Shopify cart → Shopify hosted checkout (see “Shopify (headless)”) |
+| `/checkout` | Forwards the cart to Shopify checkout (kept for old links) |
 | `/policies/[slug]` | privacy-policy, terms-of-service, shipping-policy, refund-policy, contact-information, legal-notice |
 
 Old Shopify URLs redirect permanently (`/collections/*`, `/pages/about-us`,
@@ -52,7 +53,7 @@ src/
   app/                    routes, layout, template (page transitions), sitemap/robots/manifest, icons
   assets/images/          brand + product images (static imports → auto width/height + blur)
   components/
-    cart/                 CartProvider (context + localStorage), drawer, cart page, checkout, confirmation
+    cart/                 CartProvider (Shopify cart via Server Actions), drawer, cart page, checkout button
     decor/                LeafMark (brand sprout), botanical SVG accents, wave, circular text
     forms/                ContactForm, TrackOrder
     home/                 Hero, Philosophy, BrandFilm, TanoraHighlight, ScienceOfGlow, Marquee, PraniteStandard, TrackOrderBand
@@ -62,8 +63,12 @@ src/
     product/              ProductGallery, ProductPurchase, ProductCard, product page sections
     splash/               SplashScript (head), SplashScreen
     ui/                   Button, Logo, SectionHeading, Accordion, Breadcrumbs, RichText
-  content/                site.ts (contact, nav, values) · faq.ts · policies.ts
-  lib/                    catalog.ts (data layer) · checkout.ts · orders.ts · gsap.ts · splash.ts · utils.ts
+  content/                site.ts (contact, nav, values) · products.ts (editorial product sections) · faq.ts · policies.ts
+  lib/
+    shopify/              Storefront API client (shopifyFetch), GraphQL queries, types
+    catalog.ts            data layer: Shopify product → Product (+ editorial content)
+    cart-actions.ts       cart Server Actions (cart id in an httpOnly cookie)
+    gsap.ts · splash.ts · utils.ts
 public/media/             brand film (mp4) + poster
 ```
 
@@ -124,11 +129,16 @@ automatically. Current files (all taken from the live site):
 | File | Used for |
 |---|---|
 | `pranite-logo.png` / `pranite-logo-light.png` | Header / footer + splash (transparent cut-outs of the site logo) |
-| `tanora-lifestyle.jpg` | Hero, gallery #1, catalog card, cart thumbnail |
-| `tanora-key-benefits.jpg` | Gallery #2 |
-| `tanora-key-ingredients.jpg` | Gallery #3, About page |
-| `tanora-before-after.jpg` | Gallery #4, “Why Tanora?” |
-| `tanora-bathing-bar.jpg` | Gallery #5, Discover Tanora card, catalog hover image |
+| `tanora-lifestyle.jpg` | Hero |
+| `tanora-key-benefits.jpg` | Spare |
+| `tanora-key-ingredients.jpg` | About page |
+| `tanora-before-after.jpg` | “Why Tanora?” (product page) |
+| `tanora-bathing-bar.jpg` | Discover Tanora card (homepage) |
+
+**Product photos** (gallery, catalog cards, cart thumbnails) come from **Shopify**:
+edit them in Shopify admin → Products. The first image is shown filling the
+frame (use a photograph); the others are shown whole, so text-bearing graphics
+are never cropped. Add alt text to each image in Shopify for accessibility.
 | `premium-skincare-badges.png` | Spare (badges are rebuilt in code as icons) |
 | `src/app/icon.png`, `apple-icon.png` | Favicon / home-screen icon |
 | `public/media/brand-film.mp4` + `brand-film-poster.webp` | Brand film |
@@ -138,44 +148,71 @@ replace the file keeping the **same file name**. Width/height update
 automatically. Recommended: ≥ 2000 px on the long edge, sRGB JPG/PNG. No need
 to pre-convert to WebP/AVIF; `next/image` does it.
 
-**To add images to a product:** drop the file into `src/assets/images/`,
-import it at the top of `src/lib/catalog.ts` and add an entry to that product's
-`images` array with a descriptive `alt`. Use `fit: "cover"` for photographs and
-leave it out (defaults to `contain`) for graphics that contain text.
-
-**Remote images** (e.g. straight from Shopify's CDN) also work: use the URL
-string as `src`. `cdn.shopify.com` is already allowed in `next.config.ts`.
-Remote images won't get a blur placeholder.
 
 **Favicon:** replace `src/app/icon.png` (192×192) and `src/app/apple-icon.png` (180×180).
 
-## Products & going headless
+## Shopify (headless)
 
-Every page reads products through `getProducts()` / `getProduct(handle)` in
-`src/lib/catalog.ts`. They're `async` on purpose: to move to the **Shopify
-Storefront API**, re-implement those two functions to fetch from Shopify and map
-the response onto the `Product` type; no page or component changes.
-To add a product today, add another object to the `products` array (the catalog,
-sitemap and static product pages pick it up automatically).
+Shopify is the commerce backend; this Next.js app is the storefront.
 
-## Checkout
+| What | Where it comes from |
+|---|---|
+| Products, prices (INR), sale prices, variants, stock, photos, description, SEO | Shopify **Storefront API** (GraphQL), `src/lib/shopify/` |
+| Cart | Shopify **Cart API**, via Server Actions in `src/lib/cart-actions.ts`; the cart id is kept in an httpOnly cookie (`pranite_cart`, 10 days) |
+| Checkout & payment | Shopify's hosted checkout (`cart.checkoutUrl`), with no custom payment page |
+| Storytelling sections (benefits, master blend, before/after, promise) | `src/content/products.ts`, matched by **Shopify tag** (`TANORA`) |
+| Badges | Shopify tags: `new` → “New”, `best value` → “Best value”, `bestseller` → “Bestseller” |
 
-The cart is client-side (React context, saved in `localStorage`, synced across tabs).
+- **Caching:** product data is cached and refreshed in the background every
+  5 minutes (`PRODUCTS_REVALIDATE_SECONDS` in `src/lib/shopify/index.ts`). A price
+  change in Shopify shows up within ~5 minutes; the cart and checkout are always live.
+- **New products** appear in the catalog within 5 minutes and get their own page
+  automatically. Tag them `TANORA` (or add a new entry in `src/content/products.ts`)
+  to give them the full storytelling page; otherwise they get a clean page built
+  from their Shopify description.
+- **Security:** only the Storefront API token is used, server-side (no
+  `NEXT_PUBLIC_` prefix). Never add an Admin API token (`shpat_…`) to this project.
 
-- **`NEXT_PUBLIC_SHOPIFY_CHECKOUT_DOMAIN` set** (default in `.env.example`):
-  “Continue to secure payment” sends the cart to Shopify's hosted checkout via a
-  [cart permalink](https://help.shopify.com/en/manual/products/details/cart-permalink)
-  (`/cart/<variantId>:<qty>`) with email and address pre-filled. No API keys needed.
-  Verified working against the live store (it lands on Shopify's `/checkouts/…`).
+### Setup
 
-  ⚠️ **Before pointing `www.praniteessentials.com` at this Next.js site:** Shopify
-  redirects its `*.myshopify.com` domain to the store's *primary domain*. So first
-  add a sub-domain such as `shop.praniteessentials.com` in Shopify → Settings →
-  Domains, make it the primary domain, and set
-  `NEXT_PUBLIC_SHOPIFY_CHECKOUT_DOMAIN=shop.praniteessentials.com`. Otherwise
-  checkout would bounce back to this site.
-- **Variable empty**: demo mode. Orders are saved in the browser only and no
-  payment is taken (the checkout says so on screen).
+1. **Create the Storefront API token.** In Shopify admin → *Sales channels* →
+   add the **Headless** channel (free, by Shopify) → *Create storefront* →
+   *Storefront API* → *Manage* permissions and make sure these are enabled:
+   product listings, product inventory, checkouts (read/write), and tags. Copy the
+   **public access token**.
+2. **Publish products to the Headless channel** (Products → select all → *Include
+   in sales channels* → Headless). Products not published there are invisible to this site.
+3. **Environment variables**: set these locally in `.env.local` and in
+   **Vercel → Project → Settings → Environment Variables** (Production and Preview), then redeploy:
+
+   | Variable | Value |
+   |---|---|
+   | `SHOPIFY_STORE_DOMAIN` | `jx9k0m-fn.myshopify.com` |
+   | `SHOPIFY_STOREFRONT_ACCESS_TOKEN` | the public token from step 1 |
+   | `SHOPIFY_STOREFRONT_API_VERSION` | `2026-07` (Shopify retires versions after 12 months) |
+   | `NEXT_PUBLIC_SITE_URL` | `https://pranite-essentials.vercel.app` (later `https://www.praniteessentials.com`) |
+   | `NEXT_PUBLIC_SHOPIFY_ACCOUNT_URL` | `https://shopify.com/76863570134/account` |
+
+   Without a token, Shopify still answers product and cart queries (“tokenless”
+   access, with lower limits), so local development works right away, but set
+   the token for production.
+
+### Testing
+
+1. `/catalog` lists the Shopify products with the same prices as Shopify admin.
+2. Open a product → *Add to cart* → the drawer shows the item; change the quantity,
+   reload the page (the cart is still there), open a new tab (same cart).
+3. *Checkout* → you land on Shopify's checkout (`…/checkouts/cn/…`) with the same items.
+   To test a full order without paying, enable **Bogus Gateway** in Settings →
+   Payments (test mode), pay with card `1`, then switch it off again.
+4. After the order, return to the site: the cart is empty (Shopify closed it).
+
+⚠️ **Before pointing `www.praniteessentials.com` at Vercel:** `checkoutUrl`
+uses the store's *primary domain* (currently `praniteessentials.com`, which is
+Shopify-hosted). Once that domain points at this Next.js site, checkout would
+land here instead. First add a sub-domain such as `shop.praniteessentials.com`
+in Shopify → Settings → Domains and make it the primary domain; checkout URLs
+then use it automatically.
 
 Terms respected in the UI: prepaid only (no COD), free standard shipping,
 dispatch in 1–3 business days.
@@ -188,8 +225,8 @@ and a one-time code (or "Continue with Shop"), and view orders and addresses
 there.
 
 - The header **account icon**, the mobile menu's "Log in / My account", the footer's
-  "My account", and the "Have an account? Log in to check out faster." prompts
-  (cart drawer, cart page, checkout) all point to
+  "My account", the "Have an account? Log in to check out faster." prompts
+  (cart drawer, cart page) and the Track order page all point to
   `NEXT_PUBLIC_SHOPIFY_ACCOUNT_URL` (default `https://shopify.com/76863570134/account`).
 - `/account`, `/account/login`, `/account/register`, `/customer_authentication/*`
   and `/account/<anything>` redirect there, so old store links and the
@@ -207,10 +244,10 @@ there.
 
 ## Track order
 
-Orders placed through the demo checkout are found locally and show a status
-timeline. Anything else gets clear next steps (tracking arrives by email/SMS)
-and a one-click, pre-filled email to support. To connect a courier or Shopify
-order-status API, replace `lookup` in `src/components/forms/TrackOrder.tsx`.
+Orders are placed on Shopify, so live status lives in the customer's Shopify
+account (and in the shipping emails/SMS). The form points there and offers a
+one-click, pre-filled email to support. To show status inline, connect the
+Customer Account API and replace `lookup` in `src/components/forms/TrackOrder.tsx`.
 
 ## Contact form
 

@@ -6,7 +6,7 @@ import * as m from "motion/react-m";
 import { Icon } from "@/components/icons/Icons";
 import { buttonClasses } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { useCart, type CartItem } from "./CartProvider";
+import { useCart, type CartProductSnapshot } from "./CartProvider";
 
 /**
  * Add-to-cart with a calm confirmation: the label cross-fades to "Added" with
@@ -22,7 +22,7 @@ export function AddToCartButton({
   label = "Add to cart",
   disabled,
 }: {
-  item: Omit<CartItem, "quantity">;
+  item: CartProductSnapshot;
   quantity?: number;
   variant?: "primary" | "citrus" | "light";
   size?: "sm" | "md" | "lg";

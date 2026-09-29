@@ -7,7 +7,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { BotanicalIcon, Icon, type BotanicalName } from "@/components/icons/Icons";
 import { OrangeSlice } from "@/components/decor/Botanicals";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
-import type { CartItem } from "@/components/cart/CartProvider";
+import type { CartProductSnapshot } from "@/components/cart/CartProvider";
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { gsap, isLiteDevice, MQ, useGSAP } from "@/lib/gsap";
 import { formatPrice } from "@/lib/utils";
@@ -30,12 +30,14 @@ export function TanoraHighlight({
   summary,
   ingredients,
   cartItem,
+  available = true,
 }: {
   href: string;
   price: number;
   summary: string;
   ingredients: string[];
-  cartItem: Omit<CartItem, "quantity">;
+  cartItem: CartProductSnapshot;
+  available?: boolean;
 }) {
   const root = useRef<HTMLElement>(null);
 
@@ -124,7 +126,12 @@ export function TanoraHighlight({
           </RevealGroup>
 
           <Reveal delay={0.2} className="mt-11 flex flex-wrap items-center gap-4">
-            <AddToCartButton item={cartItem} variant="citrus" label={`Add to cart · ${formatPrice(price)}`} />
+            <AddToCartButton
+              item={cartItem}
+              variant="citrus"
+              label={available ? `Add to cart · ${formatPrice(price)}` : "Sold out"}
+              disabled={!available}
+            />
             <ButtonLink href={href} variant="ghost" className="text-cream-50! hover:text-leaf-300!" icon="arrow-right">
               Discover Tanora
             </ButtonLink>

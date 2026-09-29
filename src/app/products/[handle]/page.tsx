@@ -8,16 +8,16 @@ import { InViewClass } from "@/components/motion/InViewClass";
 import { BotanicalIcon, Icon } from "@/components/icons/Icons";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductPurchase } from "@/components/product/ProductPurchase";
+import { Price } from "@/components/product/Price";
 import { BenefitsSection, ClosingBand, MasterBlend, ResultsSection } from "@/components/product/ProductSections";
 import { getProduct, getProducts, imageUrl, toCartItem } from "@/lib/catalog";
-import { formatPrice } from "@/lib/utils";
 import { faqGroups } from "@/content/faq";
 import { shippingFacts, site } from "@/content/site";
 
 type Params = { params: Promise<{ handle: string }> };
 
-export const dynamicParams = false;
-
+// Known products are prebuilt; products added in Shopify later render on first
+// visit and are then cached like the rest (see PRODUCTS_REVALIDATE_SECONDS).
 export async function generateStaticParams() {
   const products = await getProducts();
   return products.map((p) => ({ handle: p.handle }));
@@ -26,7 +26,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { handle } = await params;
   const product = await getProduct(handle);
-  if (!product) return {};
+  if (!product) notFound();
   const img = product.images[0];
   return {
     title: product.seo.title,
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     alternates: { canonical: `/products/${product.handle}` },
     openGraph: {
       type: "website",
-      title: `${product.brand} ${product.name} — ${product.subtitle}`,
+      title: [`${product.brand} ${product.name}`, product.subtitle].filter(Boolean).join(" — "),
       description: product.seo.description,
       url: `/products/${product.handle}`,
       images: [{ url: imageUrl(img.src), alt: img.alt }],
@@ -47,7 +47,14 @@ export default async function ProductPage({ params }: Params) {
   const product = await getProduct(handle);
   if (!product) notFound();
 
-  const cartItem = toCartItem(product);
+  const { content } = product;
+  const purchaseOptions = product.variants.map((v) => ({
+    title: v.title,
+    available: v.available,
+    item: toCartItem(product, v),
+  }));
+  const absolute = (src: string) => (src.startsWith("http") ? src : `${site.url}${src}`);
+  const [firstWord, ...restWords] = product.name.split(" ");
   const faqs = faqGroups.filter((g) => g.id === "pricing" || g.id === "why-our-soaps").flatMap((g) => g.items);
   const productUrl = `${site.url}/products/${product.handle}`;
 
@@ -56,20 +63,21 @@ export default async function ProductPage({ params }: Params) {
       "@context": "https://schema.org",
       "@type": "Product",
       name: `${product.brand} ${product.name}`,
-      description: product.story.intro,
-      sku: product.sku,
+      description: product.description,
+      sku: product.defaultVariant.sku || undefined,
       brand: { "@type": "Brand", name: product.brand },
-      image: product.images.map((i) => `${site.url}${imageUrl(i.src)}`),
+      image: product.images.map((i) => absolute(imageUrl(i.src))),
       url: productUrl,
-      offers: {
+      offers: product.variants.map((v) => ({
         "@type": "Offer",
         url: productUrl,
-        priceCurrency: product.price.currencyCode,
-        price: product.price.amount.toFixed(2),
-        availability: product.available ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        sku: v.sku || undefined,
+        priceCurrency: v.price.currencyCode,
+        price: v.price.amount.toFixed(2),
+        availability: v.available ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
         itemCondition: "https://schema.org/NewCondition",
         seller: { "@type": "Organization", name: site.name },
-      },
+      })),
     },
     {
       "@context": "https://schema.org",
@@ -95,39 +103,41 @@ export default async function ProductPage({ params }: Params) {
             <Reveal y={16}>
               <div className="flex items-center gap-3">
                 <p className="eyebrow">{product.brand}</p>
-                {product.isNew && (
+                {(product.badge || !product.available) && (
                   <span className="rounded-full bg-leaf-300/50 px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-forest-800">
-                    New
+                    {product.available ? product.badge : "Sold out"}
                   </span>
                 )}
               </div>
               <h1 id="product-title" className="mt-4 text-[clamp(2.4rem,1.8rem+2.6vw,3.8rem)] leading-[1.02] text-forest-900">
-                TANORA <span className="italic-accent text-forest-600">Bathing Bar</span>
+                {firstWord}
+                {restWords.length > 0 && <> <span className="italic-accent text-forest-600">{restWords.join(" ")}</span></>}
               </h1>
-              <p className="mt-3 text-lg text-ink-500">{product.subtitle}</p>
+              {product.subtitle && <p className="mt-3 text-lg text-ink-500">{product.subtitle}</p>}
             </Reveal>
 
             <Reveal delay={0.06} y={16}>
               <div className="mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <p className="font-serif text-3xl tabular-nums text-forest-900">
-                  <span className="sr-only">Price: </span>
-                  {formatPrice(product.price.amount)}
+                <p className="font-serif text-3xl text-forest-900">
+                  <Price price={product.price} compareAtPrice={product.compareAtPrice} from={product.priceVaries} />
                 </p>
-                <p className="text-sm text-ink-500">MRP, inclusive of all taxes</p>
+                <p className="text-sm text-ink-500">{product.compareAtPrice ? "Inclusive of all taxes" : "MRP, inclusive of all taxes"}</p>
               </div>
-              <p className="mt-6 font-serif text-xl italic text-forest-700">{product.story.headline}</p>
+              {content && <p className="mt-6 font-serif text-xl italic text-forest-700">{content.story.headline}</p>}
               <p className="mt-3 leading-relaxed text-ink-600">{product.summary}</p>
-              <ul className="mt-6 flex flex-wrap gap-2" aria-label="Key ingredients">
-                {product.heroIngredients.map((i) => (
-                  <li key={i} className="rounded-full border border-forest-700/15 bg-cream-50 px-3.5 py-1.5 text-sm text-ink-700">
-                    {i}
-                  </li>
-                ))}
-              </ul>
+              {content && (
+                <ul className="mt-6 flex flex-wrap gap-2" aria-label="Key ingredients">
+                  {content.heroIngredients.map((i) => (
+                    <li key={i} className="rounded-full border border-forest-700/15 bg-cream-50 px-3.5 py-1.5 text-sm text-ink-700">
+                      {i}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Reveal>
 
             <Reveal delay={0.12} y={16} className="mt-8">
-              <ProductPurchase item={cartItem} available={product.available} />
+              <ProductPurchase options={purchaseOptions} />
             </Reveal>
 
             <Reveal delay={0.16} y={16}>
@@ -144,18 +154,20 @@ export default async function ProductPage({ params }: Params) {
               </ul>
             </Reveal>
 
-            <InViewClass className="mt-8" amount={0.5}>
-              <ul className="flex flex-wrap justify-between gap-y-4 border-y border-forest-700/10 py-6" aria-label="Product credentials">
-                {product.badges.map((b) => (
-                  <li key={b.label} className="flex w-1/5 min-w-[4.5rem] flex-col items-center gap-2 text-center">
-                    <span className="grid size-14 place-items-center rounded-full border border-gold-400/60 text-gold-600">
-                      <BotanicalIcon name={b.icon} draw className="size-8" strokeWidth={1.6} />
-                    </span>
-                    <span className="text-[0.68rem] font-semibold uppercase leading-tight tracking-[0.1em] text-ink-600">{b.label}</span>
-                  </li>
-                ))}
-              </ul>
-            </InViewClass>
+            {content && (
+              <InViewClass className="mt-8" amount={0.5}>
+                <ul className="flex flex-wrap justify-between gap-y-4 border-y border-forest-700/10 py-6" aria-label="Product credentials">
+                  {content.badges.map((b) => (
+                    <li key={b.label} className="flex w-1/5 min-w-[4.5rem] flex-col items-center gap-2 text-center">
+                      <span className="grid size-14 place-items-center rounded-full border border-gold-400/60 text-gold-600">
+                        <BotanicalIcon name={b.icon} draw className="size-8" strokeWidth={1.6} />
+                      </span>
+                      <span className="text-[0.68rem] font-semibold uppercase leading-tight tracking-[0.1em] text-ink-600">{b.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              </InViewClass>
+            )}
 
             <Accordion
               className="mt-4"
@@ -163,37 +175,40 @@ export default async function ProductPage({ params }: Params) {
               items={[
                 {
                   title: "Description",
+                  // Written and edited in Shopify admin (Products → description).
                   content: (
-                    <div className="space-y-4">
-                      <p className="font-semibold text-ink-700">Green Pranite TANORA Bathing Bar | Advanced Brightening &amp; Hydrating Soap</p>
-                      <p>{product.story.intro}</p>
-                      <p>{product.story.closing}</p>
-                      <p className="font-semibold text-forest-700">{product.story.claims.join(" • ")}</p>
-                    </div>
+                    <div
+                      className="prose-pranite [&>*:first-child]:mt-0"
+                      dangerouslySetInnerHTML={{ __html: product.descriptionHtml }}
+                    />
                   ),
                 },
-                {
-                  title: "Key ingredients",
-                  content: (
-                    <ul className="space-y-3">
-                      {product.ingredients.map((i) => (
-                        <li key={i.name}>
-                          <strong className="text-ink-900">{i.name}:</strong> {i.text}
-                        </li>
-                      ))}
-                    </ul>
-                  ),
-                },
-                {
-                  title: "How to use",
-                  content: (
-                    <ol className="list-inside list-decimal space-y-2">
-                      {product.howToUse.map((s) => (
-                        <li key={s}>{s}</li>
-                      ))}
-                    </ol>
-                  ),
-                },
+                ...(content
+                  ? [
+                      {
+                        title: "Key ingredients",
+                        content: (
+                          <ul className="space-y-3">
+                            {content.ingredients.map((i) => (
+                              <li key={i.name}>
+                                <strong className="text-ink-900">{i.name}:</strong> {i.text}
+                              </li>
+                            ))}
+                          </ul>
+                        ),
+                      },
+                      {
+                        title: "How to use",
+                        content: (
+                          <ol className="list-inside list-decimal space-y-2">
+                            {content.howToUse.map((s) => (
+                              <li key={s}>{s}</li>
+                            ))}
+                          </ol>
+                        ),
+                      },
+                    ]
+                  : []),
                 {
                   title: "Shipping & returns",
                   content: (
@@ -217,10 +232,14 @@ export default async function ProductPage({ params }: Params) {
         </div>
       </section>
 
-      <BenefitsSection product={product} />
-      <MasterBlend product={product} />
-      <ResultsSection product={product} />
-      <ClosingBand product={product} />
+      {content && (
+        <>
+          <BenefitsSection content={content} />
+          <MasterBlend content={content} />
+          <ResultsSection content={content} />
+          <ClosingBand content={content} />
+        </>
+      )}
 
       <section aria-labelledby="product-faq-title" className="container-page max-w-4xl py-24 md:py-32">
         <Reveal>
