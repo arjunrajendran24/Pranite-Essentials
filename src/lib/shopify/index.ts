@@ -35,13 +35,43 @@ export class ShopifyError extends Error {
   }
 }
 
-function endpoint() {
+function storeDomain() {
   const domain = process.env.SHOPIFY_STORE_DOMAIN?.trim().replace(/^https?:\/\//, "").replace(/\/$/, "");
   if (!domain) {
     throw new ShopifyError("SHOPIFY_STORE_DOMAIN is not set. Copy .env.example to .env.local (and add it in Vercel).");
   }
+  return domain;
+}
+
+function endpoint() {
   const version = process.env.SHOPIFY_STOREFRONT_API_VERSION?.trim() || DEFAULT_API_VERSION;
-  return `https://${domain}/api/${version}/graphql.json`;
+  return `https://${storeDomain()}/api/${version}/graphql.json`;
+}
+
+/**
+ * Host for Shopify-hosted checkout. Prefer SHOPIFY_CHECKOUT_DOMAIN (e.g.
+ * shop.praniteessentials.com) once that subdomain is the store's primary
+ * domain — never the Vercel marketing host, or payment links 404 here.
+ */
+function checkoutHost() {
+  const dedicated = process.env.SHOPIFY_CHECKOUT_DOMAIN?.trim().replace(/^https?:\/\//, "").replace(/\/$/, "");
+  return dedicated || storeDomain();
+}
+
+/**
+ * Shopify's `checkoutUrl` uses the store's *primary* domain. After the
+ * marketing domain moved to this Next.js site, rewrite checkout onto the
+ * Shopify-hosted checkout host so payment still works.
+ */
+function hostedCheckoutUrl(url: string) {
+  try {
+    const u = new URL(url);
+    u.protocol = "https:";
+    u.host = checkoutHost();
+    return u.toString();
+  } catch {
+    return url;
+  }
 }
 
 type FetchOptions = {
@@ -137,7 +167,7 @@ export function lineSubtitle(subtitle: string, variantTitle: string) {
 function reshapeCart(cart: ShopifyCart): Cart {
   return {
     id: cart.id,
-    checkoutUrl: cart.checkoutUrl,
+    checkoutUrl: hostedCheckoutUrl(cart.checkoutUrl),
     totalQuantity: cart.totalQuantity,
     subtotal: Number(cart.cost.subtotalAmount.amount),
     lines: cart.lines.nodes.map((line) => {
