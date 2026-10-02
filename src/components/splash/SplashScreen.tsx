@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import logo from "@/assets/images/pranite-logo.png";
 import { LeafMark } from "@/components/decor/LeafMark";
+import { site } from "@/content/site";
 import { SPLASH_DONE, isSplashActive } from "@/lib/splash";
 
 /**
@@ -114,11 +113,16 @@ export function SplashScreen() {
       </div>
       <div data-splash="content" className="relative flex flex-col items-center px-6 text-center">
         <LeafMark className="h-32 w-auto md:h-40" />
-        <div data-splash="logo" className="mt-8 w-[min(72vw,20rem)]">
-          <Image src={logo} alt="" priority sizes="320px" className="h-auto w-full" />
+        <div data-splash="logo" className="mt-8">
+          <p className="font-serif text-[clamp(2.4rem,9vw,3.75rem)] font-medium leading-none tracking-tight text-ink-900">
+            <span className="text-forest-600">Green</span> Pranite
+          </p>
+          <p className="mt-3 text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-ink-500">
+            by {site.name}
+          </p>
         </div>
         <p data-splash="tagline" className="mt-6 text-[0.72rem] font-semibold uppercase tracking-[0.3em] text-forest-600">
-          Where nature meets science
+          {site.tagline}
         </p>
       </div>
     </div>
