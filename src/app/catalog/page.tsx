@@ -4,6 +4,7 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { LeafMark } from "@/components/decor/LeafMark";
 import { getProducts } from "@/lib/catalog";
+import { getReviewSummaries, isJudgeMeConfigured } from "@/lib/judgeme";
 
 export const metadata: Metadata = {
   title: "Catalog",
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 
 export default async function CatalogPage() {
   const products = await getProducts();
+  const ratings = isJudgeMeConfigured() ? await getReviewSummaries(products.map((p) => p.handle)) : {};
 
   return (
     <>
@@ -34,7 +36,7 @@ export default async function CatalogPage() {
         <RevealGroup as="ul" className="grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3" stagger={0.12}>
           {products.map((p, i) => (
             <RevealItem as="li" key={p.handle}>
-              <ProductCard product={p} priority={i === 0} />
+              <ProductCard product={p} priority={i === 0} rating={ratings[p.handle]} />
             </RevealItem>
           ))}
 

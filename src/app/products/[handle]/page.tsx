@@ -10,7 +10,10 @@ import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductPurchase } from "@/components/product/ProductPurchase";
 import { Price } from "@/components/product/Price";
 import { BenefitsSection, ClosingBand, MasterBlend, ResultsSection } from "@/components/product/ProductSections";
+import { ProductReviews } from "@/components/product/ProductReviews";
+import { RatingBadge } from "@/components/product/StarRating";
 import { getProduct, getProducts, imageUrl, toCartItem } from "@/lib/catalog";
+import { getProductReviews, isJudgeMeConfigured } from "@/lib/judgeme";
 import { faqGroups } from "@/content/faq";
 import { shippingFacts, site } from "@/content/site";
 
@@ -57,6 +60,9 @@ export default async function ProductPage({ params }: Params) {
   const [firstWord, ...restWords] = product.name.split(" ");
   const faqs = faqGroups.filter((g) => g.id === "pricing" || g.id === "why-our-soaps").flatMap((g) => g.items);
   const productUrl = `${site.url}/products/${product.handle}`;
+  const { summary: reviewSummary, reviews } = isJudgeMeConfigured()
+    ? await getProductReviews(product.handle)
+    : { summary: { average: 0, count: 0 }, reviews: [] };
 
   const jsonLd = [
     {
@@ -68,6 +74,17 @@ export default async function ProductPage({ params }: Params) {
       brand: { "@type": "Brand", name: product.brand },
       image: product.images.map((i) => absolute(imageUrl(i.src))),
       url: productUrl,
+      ...(reviewSummary.count > 0
+        ? {
+            aggregateRating: {
+              "@type": "AggregateRating",
+              ratingValue: reviewSummary.average.toFixed(1),
+              reviewCount: reviewSummary.count,
+              bestRating: "5",
+              worstRating: "1",
+            },
+          }
+        : {}),
       offers: product.variants.map((v) => ({
         "@type": "Offer",
         url: productUrl,
@@ -114,6 +131,11 @@ export default async function ProductPage({ params }: Params) {
                 {restWords.length > 0 && <> <span className="italic-accent text-forest-600">{restWords.join(" ")}</span></>}
               </h1>
               {product.subtitle && <p className="mt-3 text-lg text-ink-500">{product.subtitle}</p>}
+              {reviewSummary.count > 0 && (
+                <a href="#product-reviews-title" className="mt-4 inline-flex">
+                  <RatingBadge average={reviewSummary.average} count={reviewSummary.count} />
+                </a>
+              )}
             </Reveal>
 
             <Reveal delay={0.06} y={16}>
@@ -239,6 +261,15 @@ export default async function ProductPage({ params }: Params) {
           <ResultsSection content={content} />
           <ClosingBand content={content} />
         </>
+      )}
+
+      {isJudgeMeConfigured() && (
+        <ProductReviews
+          productId={product.id}
+          productName={product.name}
+          summary={reviewSummary}
+          reviews={reviews}
+        />
       )}
 
       <section aria-labelledby="product-faq-title" className="container-page max-w-4xl py-24 md:py-32">

@@ -2,7 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { ButtonLink } from "@/components/ui/Button";
+import { RatingBadge } from "@/components/product/StarRating";
 import { toCartItem, type Product } from "@/lib/catalog";
+import type { ReviewSummary } from "@/lib/judgeme";
 import { formatPrice } from "@/lib/utils";
 
 /**
@@ -10,7 +12,15 @@ import { formatPrice } from "@/lib/utils";
  * cross-fades to a second image; quick-add is always visible on touch.
  * Pure CSS transitions — no JS per card.
  */
-export function ProductCard({ product, priority = false }: { product: Product; priority?: boolean }) {
+export function ProductCard({
+  product,
+  priority = false,
+  rating,
+}: {
+  product: Product;
+  priority?: boolean;
+  rating?: ReviewSummary | null;
+}) {
   const [primary, secondary] = [product.images[0], product.images[product.images.length - 1]];
   const href = `/products/${product.handle}`;
 
@@ -52,6 +62,9 @@ export function ProductCard({ product, priority = false }: { product: Product; p
             </Link>
           </h3>
           <p className="mt-1 text-sm text-ink-500">{product.subtitle}</p>
+          {rating && rating.count > 0 && (
+            <RatingBadge average={rating.average} count={rating.count} size="sm" className="mt-2" />
+          )}
         </div>
         <p className="shrink-0 text-right font-serif text-xl tabular-nums text-forest-900">
           <span className="sr-only">{product.compareAtPrice ? "Sale price: " : "Price: "}</span>
