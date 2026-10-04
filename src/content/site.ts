@@ -40,8 +40,23 @@ export const mainNav = [
   { href: "/catalog", label: "Catalog" },
   { href: "/about", label: "About Us" },
   { href: "/faq", label: "FAQ" },
+  { href: "/contact?topic=bulk-order", label: "Bulk Order" },
   { href: "/contact", label: "Contact Us" },
 ] as const;
+
+/** Active-state helper for nav items that may include a query string (e.g. bulk order). */
+export function isNavActive(pathname: string, href: string, topic?: string | null) {
+  const [path, query] = href.split("?");
+  if (path === "/") return pathname === "/";
+  if (pathname !== path && !pathname.startsWith(`${path}/`)) return false;
+  if (path === "/contact") {
+    if (pathname !== "/contact") return false;
+    const wantBulk = Boolean(query && new URLSearchParams(query).get("topic") === "bulk-order");
+    const isBulk = topic === "bulk-order";
+    return wantBulk ? isBulk : !isBulk;
+  }
+  return true;
+}
 
 export const footerNav = {
   shop: [
@@ -55,6 +70,7 @@ export const footerNav = {
     { href: "/about", label: "About us" },
     { href: "/faq", label: "FAQ" },
     { href: "/contact", label: "Contact us" },
+    { href: "/contact?topic=bulk-order", label: "Bulk order" },
   ],
   policies: [
     { href: "/policies/privacy-policy", label: "Privacy policy" },

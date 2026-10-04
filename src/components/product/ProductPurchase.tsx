@@ -7,7 +7,7 @@ import * as m from "motion/react-m";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { QuantitySelector } from "@/components/cart/QuantitySelector";
 import { useCart, type CartProductSnapshot } from "@/components/cart/CartProvider";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { cn, EASE_ORGANIC, formatPrice } from "@/lib/utils";
 
 export interface PurchaseOption {
@@ -90,6 +90,9 @@ export function ProductPurchase({ options }: { options: PurchaseOption[] }) {
         <Button variant="secondary" size="lg" className="w-full" onClick={buyNow} disabled={!available || buying} aria-busy={buying || undefined}>
           {buying ? "Opening secure checkout…" : "Buy it now"}
         </Button>
+        <ButtonLink href="/contact?topic=bulk-order" variant="ghost" size="md" className="w-full" icon="arrow-right">
+          Bulk order enquiry
+        </ButtonLink>
         {!available && (
           <p className="text-sm text-ink-500">
             Sold out for now — fresh batches arrive regularly. Follow us on Instagram to hear first.

@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import bathingBar from "@/assets/images/tanora-bathing-bar.jpg";
 import { ButtonLink } from "@/components/ui/Button";
 import { BotanicalIcon, Icon, type BotanicalName } from "@/components/icons/Icons";
@@ -137,8 +138,16 @@ export function TanoraHighlight({
             </ButtonLink>
           </Reveal>
           <Reveal delay={0.26}>
-            <p className="mt-6 flex items-center gap-2 text-sm text-sage-300">
-              <Icon name="truck" className="size-4" /> Free standard shipping · Zero sulfates &amp; parabens
+            <p className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-sage-300">
+              <span className="inline-flex items-center gap-2">
+                <Icon name="truck" className="size-4" /> Free standard shipping · Zero sulfates &amp; parabens
+              </span>
+              <span aria-hidden="true" className="text-sage-300/50">
+                ·
+              </span>
+              <Link href="/contact?topic=bulk-order" className="link-underline font-semibold text-leaf-300">
+                Bulk order
+              </Link>
             </p>
           </Reveal>
         </div>

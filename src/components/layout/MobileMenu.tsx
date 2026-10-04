@@ -2,18 +2,20 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence } from "motion/react";
 import * as m from "motion/react-m";
 import { Icon } from "@/components/icons/Icons";
 import { Logo } from "@/components/ui/Logo";
 import { LeafSprig } from "@/components/decor/Botanicals";
-import { mainNav, site } from "@/content/site";
+import { buttonClasses } from "@/components/ui/Button";
+import { isNavActive, mainNav, site } from "@/content/site";
 import { EASE_ORGANIC } from "@/lib/utils";
 
 /** Full-height sheet with staggered links. Esc / backdrop / link click close it. */
 export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
+  const topic = useSearchParams().get("topic");
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -105,7 +107,7 @@ export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => vo
                       <Link
                         href={item.href}
                         onClick={onClose}
-                        aria-current={pathname === item.href ? "page" : undefined}
+                        aria-current={isNavActive(pathname, item.href, topic) ? "page" : undefined}
                         className="group flex items-center justify-between gap-4 border-b border-forest-700/10 py-4 font-serif text-[clamp(1.75rem,8.4vw,2rem)] leading-tight text-forest-900 aria-[current=page]:text-forest-600 [@media(max-height:700px)]:py-2.5"
                       >
                         {item.label}
@@ -119,10 +121,21 @@ export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => vo
                 </m.ul>
               </nav>
 
-              <div className="container-page flex flex-col items-start pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 text-sm text-ink-600 [@media(max-height:700px)]:pt-5">
+              <div className="container-page flex flex-col items-stretch gap-3 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 text-sm text-ink-600 [@media(max-height:700px)]:pt-5">
+                <Link
+                  href="/contact?topic=bulk-order"
+                  onClick={onClose}
+                  className={buttonClasses({ size: "lg", className: "w-full" })}
+                >
+                  <span>Bulk Order</span>
+                  <Icon
+                    name="arrow-right"
+                    className="size-[1.1em] transition-transform duration-500 ease-[var(--ease-organic)] group-hover/btn:translate-x-1"
+                  />
+                </Link>
                 <a
                   href={site.accountUrl}
-                  className="mb-3 inline-flex items-center gap-2 rounded-full border border-forest-700/20 bg-cream-100 px-5 py-2.5 font-semibold text-forest-800"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-forest-700/20 bg-cream-100 px-5 py-2.5 font-semibold text-forest-800"
                 >
                   <Icon name="user" className="size-4" /> Log in / My account
                 </a>

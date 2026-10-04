@@ -2,13 +2,13 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence, useMotionValueEvent, useScroll } from "motion/react";
 import * as m from "motion/react-m";
 import { Logo } from "@/components/ui/Logo";
 import { Icon } from "@/components/icons/Icons";
 import { useCart } from "@/components/cart/CartProvider";
-import { mainNav, site } from "@/content/site";
+import { isNavActive, mainNav, site } from "@/content/site";
 import { cn, EASE_ORGANIC } from "@/lib/utils";
 import { MobileMenu } from "./MobileMenu";
 
@@ -19,6 +19,8 @@ import { MobileMenu } from "./MobileMenu";
  */
 export function Header() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const topic = searchParams.get("topic");
   const { count, open, hydrated } = useCart();
   const { scrollY } = useScroll();
   const [hidden, setHidden] = useState(false);
@@ -35,8 +37,6 @@ export function Header() {
     const nextScrolled = y > 12;
     if (nextScrolled !== scrolled) setScrolled(nextScrolled);
   });
-
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
     <>
@@ -70,7 +70,7 @@ export function Header() {
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      aria-current={isActive(item.href) ? "page" : undefined}
+                      aria-current={isNavActive(pathname, item.href, topic) ? "page" : undefined}
                       className="link-underline py-1 text-[0.93rem] font-medium text-ink-700 transition-colors hover:text-forest-700 aria-[current=page]:text-forest-800"
                     >
                       {item.label}

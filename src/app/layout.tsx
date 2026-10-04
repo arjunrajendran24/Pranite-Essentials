@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Fraunces, Manrope } from "next/font/google";
 import "./globals.css";
 
@@ -108,7 +109,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <MotionProvider>
           <CartProvider>
             <SplashScreen />
-            <Header />
+            <Suspense fallback={<div className="h-[calc(2.25rem+4.5rem)] md:h-[calc(2.25rem+5rem)]" aria-hidden="true" />}>
+              <Header />
+            </Suspense>
             <main id="main" tabIndex={-1}>
               {children}
             </main>

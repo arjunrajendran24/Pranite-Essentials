@@ -24,18 +24,39 @@ const channels: { icon: IconName; label: string; value: string; href?: string; n
   },
 ];
 
-export default function ContactPage() {
+export default async function ContactPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ topic?: string }>;
+}) {
+  const { topic } = await searchParams;
+  const isBulk = topic === "bulk-order";
+
   return (
     <>
       <PageHero
-        eyebrow="Contact"
+        eyebrow={isBulk ? "Bulk order" : "Contact"}
         title={
-          <>
-            We’d love to <span className="italic-accent text-forest-600">hear from you</span>
-          </>
+          isBulk ? (
+            <>
+              Bulk &amp; wholesale <span className="italic-accent text-forest-600">enquiries</span>
+            </>
+          ) : (
+            <>
+              We’d love to <span className="italic-accent text-forest-600">hear from you</span>
+            </>
+          )
         }
-        lead="Questions about your order, our formulations, or a retail or creator partnership? Reach out — our team is here to help."
-        crumbs={[{ href: "/", label: "Home" }, { label: "Contact Us" }]}
+        lead={
+          isBulk
+            ? "Retailers, distributors, and teams ordering in quantity — tell us what you need and we’ll get back with availability and pricing."
+            : "Questions about your order, our formulations, or a retail or creator partnership? Reach out — our team is here to help."
+        }
+        crumbs={[
+          { href: "/", label: "Home" },
+          { href: "/contact", label: "Contact Us" },
+          ...(isBulk ? [{ label: "Bulk order" }] : []),
+        ]}
       />
 
       <section className="container-page grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-20">
@@ -75,9 +96,15 @@ export default function ContactPage() {
 
         <Reveal y={40}>
           <div className="rounded-[2rem] bg-cream-50 p-7 shadow-card md:rounded-[2.5rem] md:p-12">
-            <h2 className="text-h3 text-forest-900">Send us a message</h2>
-            <p className="mb-8 mt-2 text-ink-500">We usually reply within one business day.</p>
-            <ContactForm />
+            <h2 className="text-h3 text-forest-900">
+              {isBulk ? "Tell us about your order" : "Send us a message"}
+            </h2>
+            <p className="mb-8 mt-2 text-ink-500">
+              {isBulk
+                ? "Share quantity, location, and business type — we usually reply within one business day."
+                : "We usually reply within one business day."}
+            </p>
+            <ContactForm topic={topic} />
           </div>
         </Reveal>
       </section>

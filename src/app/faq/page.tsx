@@ -69,11 +69,16 @@ export default function FaqPage() {
             <div className="flex flex-col items-start gap-6 rounded-[2rem] bg-sage-100 p-8 md:flex-row md:items-center md:justify-between md:p-10">
               <div>
                 <h2 className="text-h3 text-forest-900">Still have a question?</h2>
-                <p className="mt-2 text-ink-500">Our team is happy to help with orders, products or partnerships.</p>
+                <p className="mt-2 text-ink-500">Our team is happy to help with orders, products, partnerships, or bulk enquiries.</p>
               </div>
-              <ButtonLink href="/contact" icon="arrow-right">
-                Contact us
-              </ButtonLink>
+              <div className="flex flex-wrap gap-3">
+                <ButtonLink href="/contact" icon="arrow-right">
+                  Contact us
+                </ButtonLink>
+                <ButtonLink href="/contact?topic=bulk-order" variant="secondary">
+                  Bulk order
+                </ButtonLink>
+              </div>
             </div>
           </Reveal>
         </div>
