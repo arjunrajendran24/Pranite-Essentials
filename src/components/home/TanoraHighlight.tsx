@@ -80,7 +80,7 @@ export function TanoraHighlight({
           <div data-card className="relative aspect-square overflow-hidden rounded-[2rem] bg-cream-100 will-change-transform md:rounded-[2.5rem]">
             <Image
               src={bathingBar}
-              alt="TANORA Bathing Bar packaging surrounded by botanical line art, with SLS-free, paraben-free and FDA approved marks."
+              alt="TANORA Bathing Bar packaging surrounded by botanical line art, with SLS-free and paraben-free marks."
               fill
               placeholder="blur"
               sizes="(min-width: 768px) 46vw, 92vw"
@@ -138,7 +138,7 @@ export function TanoraHighlight({
           </Reveal>
           <Reveal delay={0.26}>
             <p className="mt-6 flex items-center gap-2 text-sm text-sage-300">
-              <Icon name="truck" className="size-4" /> Free standard shipping · FDA-approved · Zero sulfates &amp; parabens
+              <Icon name="truck" className="size-4" /> Free standard shipping · Zero sulfates &amp; parabens
             </p>
           </Reveal>
         </div>

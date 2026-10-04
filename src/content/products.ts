@@ -52,7 +52,7 @@ const tanora: ProductContent = {
     closingTitle: "Pure. Honest. Uncompromising.",
     closing:
       "You deserve premium skincare you can trust implicitly. Designed for daily use on both the face and body, TANORA delivers a dense, spa-like lather that respects your skin's delicate balance.",
-    claims: ["FDA-Approved", "100% Cruelty-Free", "Zero Sulfates & Parabens"],
+    claims: ["100% Cruelty-Free", "Zero Sulfates & Parabens"],
     signoff: "Experience the profound confidence of truly healthy, harmonious skin. Real care. Real results.",
   },
   benefits: [
@@ -112,7 +112,6 @@ const tanora: ProductContent = {
     { icon: "sls", label: "SLS free" },
     { icon: "paraben", label: "Paraben free" },
     { icon: "rabbit", label: "Cruelty free" },
-    { icon: "shield", label: "FDA approved" },
     { icon: "flask", label: "Lab tested" },
   ],
   resultsImage: {
