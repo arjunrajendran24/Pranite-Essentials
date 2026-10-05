@@ -16,10 +16,12 @@ export function ReviewForm({ productId, productName }: { productId: string; prod
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // Capture before await — React nulls synthetic event currentTarget afterward.
+    const form = e.currentTarget;
     setStatus("submitting");
     setError("");
 
-    const data = new FormData(e.currentTarget);
+    const data = new FormData(form);
     const payload = {
       productId,
       name: String(data.get("name") ?? "").trim(),
@@ -41,9 +43,9 @@ export function ReviewForm({ productId, productName }: { productId: string; prod
         setError(json.error || "Could not submit your review.");
         return;
       }
-      setStatus("done");
-      e.currentTarget.reset();
+      form.reset();
       setRating(5);
+      setStatus("done");
     } catch {
       setStatus("error");
       setError("Could not submit your review. Please try again.");
