@@ -10,10 +10,28 @@
  */
 import type { StaticImageData } from "next/image";
 import beforeAfter from "@/assets/images/tanora-before-after.jpg";
+import type { BotanicalName, IconName } from "@/components/icons/Icons";
 
 export type BenefitIcon = "sun" | "spots" | "pores" | "tone" | "drop" | "feather";
 export type IngredientIcon = "orange" | "molecule" | "flask" | "milk" | "dropper";
 export type BadgeIcon = "sls" | "paraben" | "rabbit" | "shield" | "flask" | "hand";
+
+export interface ProductBundle {
+  /** Shopify product handle for the pack. */
+  handle: string;
+  /** Short label, e.g. "Pack of 2". */
+  title: string;
+  /** Save callout, e.g. "save 20%". */
+  saveLabel: string;
+}
+
+export interface ProductPromise {
+  title: string;
+  text: string;
+  /** Prefer botanical marks; fall back to a UI icon when needed. */
+  icon: BotanicalName | IconName;
+  iconKind?: "botanical" | "ui";
+}
 
 export interface ProductContent {
   /** Hero ingredients shown as chips. */
@@ -33,6 +51,10 @@ export interface ProductContent {
   whyItWorks: string[];
   howToUse: string[];
   badges: { icon: BadgeIcon; label: string }[];
+  /** Multi-pack value deals ("Buy more, save more"). */
+  bundles?: ProductBundle[];
+  /** Short trust points shown beside the buy box. */
+  promises?: ProductPromise[];
   /** Image for the "Real results" section. */
   resultsImage: { src: StaticImageData; alt: string };
 }
@@ -113,6 +135,16 @@ const tanora: ProductContent = {
     { icon: "paraben", label: "Paraben free" },
     { icon: "rabbit", label: "Cruelty free" },
     { icon: "flask", label: "Lab tested" },
+  ],
+  bundles: [
+    { handle: "tanora-bathing-bar-pack-of-2-save-20", title: "Pack of 2", saveLabel: "save 20%" },
+    { handle: "tanora-bathing-bar-pack-of-3-save-25", title: "Pack of 3", saveLabel: "save 25%" },
+  ],
+  promises: [
+    { icon: "rabbit", title: "Cruelty-free", text: "Never tested on animals" },
+    { icon: "leaf", title: "Sulfate & paraben free", text: "Gentle formula" },
+    { icon: "truck", iconKind: "ui", title: "Quick delivery", text: "2–3 days after dispatch" },
+    { icon: "mail", iconKind: "ui", title: "Easy support", text: "We are here to help" },
   ],
   resultsImage: {
     src: beforeAfter,

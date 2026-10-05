@@ -104,6 +104,41 @@ function truncate(text: string, max = 160) {
   return text.length <= max ? text : `${text.slice(0, max - 1).replace(/\s+\S*$/, "")}…`;
 }
 
+/**
+ * Shopify descriptions sometimes start with theme-era HTML chrome (pack
+ * upsells, trust-badge grids) pasted above the real copy. Drop that prefix so
+ * summaries and the description accordion only show body text.
+ */
+function cleanDescriptionHtml(html: string): string {
+  const trimmed = html.trim();
+  const p = trimmed.search(/<p\b/i);
+  if (p <= 0) return trimmed;
+  const prefix = trimmed.slice(0, p);
+  if (
+    /Buy more,\s*save more/i.test(prefix) ||
+    (/Never tested on animals/i.test(prefix) && /Quick delivery/i.test(prefix))
+  ) {
+    return trimmed.slice(p).trim();
+  }
+  return trimmed;
+}
+
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(?:p|div|li|h[1-6]|tr|details|summary)>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function toImage(img: ShopifyImage, alt: string, index: number): ProductImage {
   return {
     src: img.url,
@@ -138,7 +173,9 @@ function reshapeProduct(p: ShopifyProduct): Product {
   const images = p.images.nodes.map((img, i) => toImage(img, i === 0 ? label : `${label}, image ${i + 1}`, i));
   if (!images.length) images.push({ src: logo, alt: label, fit: "contain" });
 
-  const summary = summarize(p.description);
+  const descriptionHtml = cleanDescriptionHtml(p.descriptionHtml);
+  const description = htmlToPlainText(descriptionHtml) || p.description.trim();
+  const summary = summarize(description);
 
   return {
     id: p.id,
@@ -156,12 +193,12 @@ function reshapeProduct(p: ShopifyProduct): Product {
     images,
     variants,
     defaultVariant,
-    description: p.description,
-    descriptionHtml: p.descriptionHtml,
+    description,
+    descriptionHtml,
     summary,
     seo: {
       title: p.seo.title?.trim() || [name, subtitle].filter(Boolean).join(" — "),
-      description: p.seo.description?.trim() || truncate(p.description),
+      description: p.seo.description?.trim() || truncate(description),
     },
     content: getProductContent(p.tags),
   };

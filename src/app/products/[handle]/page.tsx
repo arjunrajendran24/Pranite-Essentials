@@ -8,6 +8,7 @@ import { InViewClass } from "@/components/motion/InViewClass";
 import { BotanicalIcon, Icon } from "@/components/icons/Icons";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductPurchase } from "@/components/product/ProductPurchase";
+import { ProductBundles, ProductPromises } from "@/components/product/ProductBuyExtras";
 import { Price } from "@/components/product/Price";
 import { BenefitsSection, ClosingBand, MasterBlend, ResultsSection } from "@/components/product/ProductSections";
 import { ProductReviews } from "@/components/product/ProductReviews";
@@ -63,6 +64,25 @@ export default async function ProductPage({ params }: Params) {
   const { summary: reviewSummary, reviews } = isJudgeMeConfigured()
     ? await getProductReviews(product.handle)
     : { summary: { average: 0, count: 0 }, reviews: [] };
+
+  const bundleDeals = content?.bundles
+    ? (
+        await Promise.all(
+          content.bundles.map(async (bundle) => {
+            if (bundle.handle === product.handle) return null;
+            const pack = await getProduct(bundle.handle);
+            if (!pack) return null;
+            return {
+              handle: pack.handle,
+              title: bundle.title,
+              saveLabel: bundle.saveLabel,
+              price: pack.price.amount,
+              href: `/products/${pack.handle}`,
+            };
+          }),
+        )
+      ).filter((d): d is NonNullable<typeof d> => Boolean(d))
+    : [];
 
   const jsonLd = [
     {
@@ -158,9 +178,21 @@ export default async function ProductPage({ params }: Params) {
               )}
             </Reveal>
 
+            {bundleDeals.length > 0 && (
+              <Reveal delay={0.1} y={16} className="mt-8">
+                <ProductBundles deals={bundleDeals} />
+              </Reveal>
+            )}
+
             <Reveal delay={0.12} y={16} className="mt-8">
               <ProductPurchase options={purchaseOptions} />
             </Reveal>
+
+            {content?.promises && content.promises.length > 0 && (
+              <Reveal delay={0.14} y={16} className="mt-8">
+                <ProductPromises items={content.promises} />
+              </Reveal>
+            )}
 
             <Reveal delay={0.16} y={16}>
               <ul className="mt-8 grid gap-3 rounded-[1.5rem] border border-forest-700/10 bg-cream-50 p-5 text-sm text-ink-600">
@@ -193,7 +225,6 @@ export default async function ProductPage({ params }: Params) {
 
             <Accordion
               className="mt-4"
-              defaultOpen={[0]}
               items={[
                 {
                   title: "Description",
