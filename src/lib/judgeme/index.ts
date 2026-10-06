@@ -158,6 +158,8 @@ export type CreateReviewInput = {
   rating: number;
   body: string;
   title?: string;
+  /** Public HTTPS image URLs (JPG/PNG). Max 5 — Judge.me fetches and stores them. */
+  pictureUrls?: string[];
 };
 
 export type CreateReviewResult = { ok: true } | { ok: false; error: string };
@@ -179,6 +181,10 @@ export async function createReview(input: CreateReviewInput): Promise<CreateRevi
   const body = input.body.trim();
   const rating = Math.round(input.rating);
   const title = input.title?.trim();
+  const pictureUrls = (input.pictureUrls ?? [])
+    .map((u) => u.trim())
+    .filter((u) => /^https:\/\//i.test(u))
+    .slice(0, 5);
 
   if (!name) return { ok: false, error: "Please enter your name." };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -198,6 +204,10 @@ export async function createReview(input: CreateReviewInput): Promise<CreateRevi
     body,
   });
   if (title) params.set("title", title);
+  // Judge.me expects an array of public image URLs (not file uploads).
+  for (const url of pictureUrls) {
+    params.append("picture_urls[]", url);
+  }
 
   try {
     const res = await fetch("https://judge.me/api/v1/reviews", {

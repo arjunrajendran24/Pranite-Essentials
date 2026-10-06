@@ -55,6 +55,8 @@ export function ContactForm({ topic }: { topic?: string }) {
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
+    e.currentTarget.reset();
+    setErrors({});
     setSent(true);
   };
 

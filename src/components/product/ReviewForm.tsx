@@ -1,41 +1,113 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/icons/Icons";
 import { cn } from "@/lib/utils";
+
+const MAX_PHOTOS = 5;
+const MAX_BYTES = 10 * 1024 * 1024;
+const ACCEPT = "image/jpeg,image/jpg,image/png,.jpg,.jpeg,.png";
+
+type PhotoDraft = { id: string; file: File; preview: string };
 
 /**
  * Write-a-review form. Posts to `/api/reviews` so the Judge.me private token
- * never reaches the browser.
+ * never reaches the browser. Optional photos (JPG/PNG, max 5) are hosted
+ * server-side then sent to Judge.me as `picture_urls`.
  */
 export function ReviewForm({ productId, productName }: { productId: string; productName: string }) {
+  const inputId = useId();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const photosRef = useRef<PhotoDraft[]>([]);
   const [rating, setRating] = useState(5);
   const [hover, setHover] = useState(0);
+  const [photos, setPhotos] = useState<PhotoDraft[]>([]);
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [error, setError] = useState("");
+
+  photosRef.current = photos;
+
+  useEffect(() => {
+    return () => {
+      photosRef.current.forEach((p) => URL.revokeObjectURL(p.preview));
+    };
+  }, []);
+
+  const clearPhotos = () => {
+    setPhotos((prev) => {
+      prev.forEach((p) => URL.revokeObjectURL(p.preview));
+      return [];
+    });
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const addPhotos = (list: FileList | null) => {
+    if (!list?.length) return;
+    setError("");
+
+    const incoming = Array.from(list);
+    const next: PhotoDraft[] = [];
+    let message = "";
+
+    for (const file of incoming) {
+      if (photos.length + next.length >= MAX_PHOTOS) {
+        message = `You can attach up to ${MAX_PHOTOS} photos.`;
+        break;
+      }
+      const isImage =
+        /image\/(jpeg|jpg|png)/i.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
+      if (!isImage) {
+        message = "Photos must be JPG or PNG.";
+        continue;
+      }
+      if (file.size > MAX_BYTES) {
+        message = "Each photo must be 10 MB or smaller.";
+        continue;
+      }
+      next.push({
+        id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
+        file,
+        preview: URL.createObjectURL(file),
+      });
+    }
+
+    if (next.length) setPhotos((prev) => [...prev, ...next].slice(0, MAX_PHOTOS));
+    if (message) setError(message);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const removePhoto = (id: string) => {
+    setPhotos((prev) => {
+      const target = prev.find((p) => p.id === id);
+      if (target) URL.revokeObjectURL(target.preview);
+      return prev.filter((p) => p.id !== id);
+    });
+  };
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Capture before await — React nulls synthetic event currentTarget afterward.
-    const form = e.currentTarget;
+    const formEl = e.currentTarget;
     setStatus("submitting");
     setError("");
 
-    const data = new FormData(form);
-    const payload = {
-      productId,
-      name: String(data.get("name") ?? "").trim(),
-      email: String(data.get("email") ?? "").trim(),
-      title: String(data.get("title") ?? "").trim(),
-      body: String(data.get("body") ?? "").trim(),
-      rating,
-    };
+    const data = new FormData(formEl);
+    const form = new FormData();
+    form.set("productId", productId);
+    form.set("name", String(data.get("name") ?? "").trim());
+    form.set("email", String(data.get("email") ?? "").trim());
+    form.set("title", String(data.get("title") ?? "").trim());
+    form.set("body", String(data.get("body") ?? "").trim());
+    form.set("rating", String(rating));
+    for (const photo of photos) {
+      form.append("photos", photo.file, photo.file.name);
+    }
 
     try {
       const res = await fetch("/api/reviews", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: form,
       });
       const json = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !json.ok) {
@@ -43,8 +115,9 @@ export function ReviewForm({ productId, productName }: { productId: string; prod
         setError(json.error || "Could not submit your review.");
         return;
       }
-      form.reset();
+      formEl.reset();
       setRating(5);
+      clearPhotos();
       setStatus("done");
     } catch {
       setStatus("error");
@@ -135,6 +208,62 @@ export function ReviewForm({ productId, productName }: { productId: string; prod
           className="field min-h-[7rem] resize-y"
           placeholder="How has it worked for your skin?"
         />
+      </div>
+
+      <div className="sm:col-span-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <label htmlFor={inputId} className="field-label mb-0">
+            Photos <span className="font-normal text-ink-400">(optional)</span>
+          </label>
+          <p className="text-sm text-ink-400">
+            JPG or PNG · up to {MAX_PHOTOS} · 10 MB each
+          </p>
+        </div>
+
+        <input
+          ref={fileRef}
+          id={inputId}
+          type="file"
+          accept={ACCEPT}
+          multiple
+          className="sr-only"
+          onChange={(e) => addPhotos(e.target.files)}
+        />
+
+        <ul className="mt-3 flex flex-wrap gap-3">
+          {photos.map((photo) => (
+            <li key={photo.id} className="relative">
+              <img
+                src={photo.preview}
+                alt=""
+                width={96}
+                height={96}
+                className="size-24 rounded-xl object-cover ring-1 ring-forest-700/10"
+              />
+              <button
+                type="button"
+                className="absolute -right-1.5 -top-1.5 flex size-7 items-center justify-center rounded-full bg-forest-900 text-cream-50 shadow-sm transition hover:bg-forest-700"
+                aria-label="Remove photo"
+                onClick={() => removePhoto(photo.id)}
+              >
+                <Icon name="close" className="size-3.5" />
+              </button>
+            </li>
+          ))}
+
+          {photos.length < MAX_PHOTOS && (
+            <li>
+              <button
+                type="button"
+                className="flex size-24 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-sand-400 bg-cream-50 text-ink-500 transition hover:border-forest-600 hover:bg-white hover:text-forest-700"
+                onClick={() => fileRef.current?.click()}
+              >
+                <Icon name="plus" className="size-5" />
+                <span className="text-[0.7rem] font-semibold uppercase tracking-[0.12em]">Add</span>
+              </button>
+            </li>
+          )}
+        </ul>
       </div>
 
       {error && (
