@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence } from "motion/react";
 import * as m from "motion/react-m";
 import { Icon } from "@/components/icons/Icons";
@@ -28,7 +28,7 @@ export function AddToCartButton({
   size?: "sm" | "md" | "lg";
   className?: string;
   openCart?: boolean;
-  label?: string;
+  label?: ReactNode;
   disabled?: boolean;
 }) {
   const { add } = useCart();

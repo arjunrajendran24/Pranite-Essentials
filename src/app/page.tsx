@@ -9,16 +9,16 @@ import { getFeaturedProduct, toCartItem } from "@/lib/catalog";
 
 export default async function HomePage() {
   const product = await getFeaturedProduct();
-  const href = product ? `/products/${product.handle}` : "/catalog";
 
   return (
     <>
-      <Hero productHref={href} />
+      <Hero productHref="/catalog" />
       <Philosophy />
       {product && (
         <TanoraHighlight
-          href={href}
+          href="/catalog"
           price={product.price.amount}
+          compareAtPrice={product.compareAtPrice?.amount}
           summary={product.summary}
           ingredients={product.content?.heroIngredients ?? []}
           cartItem={toCartItem(product)}

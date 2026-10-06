@@ -43,7 +43,18 @@ export function ContactForm({ topic }: { topic?: string }) {
     const body = [comment, "", "—", name && `Name: ${name}`, `Email: ${email}`, phone && `Phone: ${phone}`]
       .filter(Boolean)
       .join("\n");
-    window.location.href = `mailto:${site.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    // Safari (iPhone / Mac) often ignores `window.location.href = mailto:…`
+    // after a form preventDefault. A real <a> click inside the same user
+    // gesture opens Mail / the default client reliably across platforms.
+    const mailto = `mailto:${site.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const anchor = document.createElement("a");
+    anchor.href = mailto;
+    anchor.rel = "noopener";
+    anchor.style.display = "none";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
     setSent(true);
   };
 

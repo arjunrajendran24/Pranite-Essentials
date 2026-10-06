@@ -28,6 +28,7 @@ const ingredientIcon: Record<string, BotanicalName> = {
 export function TanoraHighlight({
   href,
   price,
+  compareAtPrice,
   summary,
   ingredients,
   cartItem,
@@ -35,6 +36,8 @@ export function TanoraHighlight({
 }: {
   href: string;
   price: number;
+  /** MRP / original price when higher than `price` (shown struck through). */
+  compareAtPrice?: number;
   summary: string;
   ingredients: string[];
   cartItem: CartProductSnapshot;
@@ -130,7 +133,21 @@ export function TanoraHighlight({
             <AddToCartButton
               item={cartItem}
               variant="citrus"
-              label={available ? `Add to cart · ${formatPrice(price)}` : "Sold out"}
+              label={
+                available ? (
+                  <span className="inline-flex items-baseline gap-1.5">
+                    <span>Add to cart · {formatPrice(price)}</span>
+                    {compareAtPrice != null && compareAtPrice > price && (
+                      <s className="text-[0.85em] font-normal opacity-60">
+                        <span className="sr-only">Regular price: </span>
+                        {formatPrice(compareAtPrice)}
+                      </s>
+                    )}
+                  </span>
+                ) : (
+                  "Sold out"
+                )
+              }
               disabled={!available}
             />
             <ButtonLink href={href} variant="ghost" className="text-cream-50! hover:text-leaf-300!" icon="arrow-right">

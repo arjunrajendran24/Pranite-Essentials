@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 500" role="img" aria-label="Credit or debit card">
+  <rect width="780" height="500" rx="40" fill="#FFFFFF"/>
+  <rect x="90" y="110" width="600" height="280" rx="28" fill="#E5E7EB"/>
+  <rect x="90" y="160" width="600" height="70" fill="#4B5563"/>
+  <rect x="130" y="280" width="180" height="45" rx="8" fill="#9CA3AF"/>
+  <rect x="480" y="280" width="150" height="45" rx="8" fill="#9CA3AF"/>
+</svg>

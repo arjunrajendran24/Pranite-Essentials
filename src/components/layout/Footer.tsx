@@ -5,6 +5,17 @@ import { Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { LeafSprig } from "@/components/decor/Botanicals";
 import { footerNav, site } from "@/content/site";
 
+const paymentMethods = [
+  { src: "/payment/visa.svg", alt: "Visa" },
+  { src: "/payment/mastercard.svg", alt: "Mastercard" },
+  { src: "/payment/rupay.svg", alt: "RuPay" },
+  { src: "/payment/upi.svg", alt: "UPI" },
+  { src: "/payment/gpay.svg", alt: "Google Pay" },
+  { src: "/payment/card.svg", alt: "Credit or debit card" },
+  { src: "/payment/paytm.svg", alt: "Paytm" },
+  { src: "/payment/razorpay.svg", alt: "Razorpay" },
+] as const;
+
 export function Footer() {
   return (
     <footer className="sprig-host relative mt-24 overflow-hidden rounded-t-[2.5rem] bg-forest-900 text-sage-200 md:mt-32 md:rounded-t-[4rem]">
@@ -67,13 +78,50 @@ export function Footer() {
           </RevealItem>
         </RevealGroup>
 
-        <div className="flex flex-col gap-3 border-t border-cream-50/10 pt-8 text-xs text-sage-300 md:flex-row md:items-center md:justify-between">
-          <p>
-            © {new Date().getFullYear()} {site.name.toUpperCase()}. All rights reserved.
+        <div className="flex flex-col items-center gap-5 border-t border-cream-50/10 pt-10 text-center">
+          <p className="text-sm text-sage-200">
+            Powered by{" "}
+            <a
+              href="https://www.shopify.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link-underline text-cream-50 transition-colors hover:text-leaf-300"
+            >
+              Shopify
+            </a>
           </p>
-          <p className="flex items-center gap-2">
+          <p className="text-sm text-sage-200">
+            © {new Date().getFullYear()} {site.name}. All rights reserved.
+          </p>
+          <p className="flex items-center gap-2 text-xs text-sage-300">
             <Icon name="leaf" className="size-3.5 text-leaf-400" /> 100% Natural · Science-Backed · Cruelty-Free
           </p>
+
+          <div className="mt-2 w-full">
+            <p className="text-sm font-semibold tracking-wide text-cream-50">We Accept</p>
+            <ul
+              className="mx-auto mt-3 flex w-full max-w-lg items-center justify-center gap-1.5"
+              aria-label="Accepted payment methods"
+            >
+              {paymentMethods.map((method) => (
+                <li
+                  key={method.alt}
+                  className="flex h-6 min-w-0 flex-1 items-center justify-center rounded-md border border-cream-50/20 bg-cream-50 p-0.5 shadow-[0_1px_0_rgb(0_0_0/0.05)] sm:h-7"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- local brand SVGs; no next/image optimization needed */}
+                  <img
+                    src={method.src}
+                    alt={method.alt}
+                    width={40}
+                    height={24}
+                    className="h-full w-full object-contain"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
     </footer>
