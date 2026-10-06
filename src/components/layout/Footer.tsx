@@ -79,17 +79,7 @@ export function Footer() {
         </RevealGroup>
 
         <div className="flex flex-col items-center gap-5 border-t border-cream-50/10 pt-10 text-center">
-          <p className="text-sm text-sage-200">
-            Powered by{" "}
-            <a
-              href="https://www.shopify.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="link-underline text-cream-50 transition-colors hover:text-leaf-300"
-            >
-              Shopify
-            </a>
-          </p>
+
           <p className="text-sm text-sage-200">
             © {new Date().getFullYear()} {site.name}. All rights reserved.
           </p>
