@@ -54,11 +54,19 @@ export async function uploadReviewPhotos(
     for (const file of files) {
       const ext = file.name.match(ACCEPTED_EXT)?.[0]?.toLowerCase() || ".jpg";
       const safeName = `reviews/${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
+      // Keep a real image extension in the final URL — Judge.me rejects URLs
+      // that don't look like .jpg/.jpeg/.png when ingesting picture_urls.
       const blob = await put(safeName, file, {
         access: "public",
         contentType: file.type || (ext === ".png" ? "image/png" : "image/jpeg"),
         addRandomSuffix: true,
       });
+      if (!ACCEPTED_EXT.test(blob.url.split("?")[0] ?? "")) {
+        return {
+          ok: false,
+          error: "Uploaded photo URL was invalid. Please try a different JPG or PNG.",
+        };
+      }
       urls.push(blob.url);
     }
     return { ok: true, urls };

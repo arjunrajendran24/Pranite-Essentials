@@ -10,7 +10,13 @@ export interface JudgeMeReviewer {
 }
 
 export interface JudgeMePicture {
-  urls?: { huge?: string; small?: string; original?: string };
+  urls?: {
+    huge?: string;
+    small?: string;
+    original?: string;
+    compact?: string;
+    mega?: string;
+  };
   hidden?: boolean;
 }
 

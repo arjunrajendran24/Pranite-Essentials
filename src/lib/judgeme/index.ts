@@ -78,7 +78,7 @@ export async function getJudgeMeProduct(handle: string): Promise<JudgeMeProduct 
 function reshapeReview(r: JudgeMeReview): ProductReview {
   const pictures = (r.pictures ?? [])
     .filter((p) => !p.hidden)
-    .map((p) => p.urls?.huge || p.urls?.original || p.urls?.small)
+    .map((p) => p.urls?.huge || p.urls?.mega || p.urls?.original || p.urls?.compact || p.urls?.small)
     .filter((u): u is string => Boolean(u));
 
   return {
@@ -193,31 +193,34 @@ export async function createReview(input: CreateReviewInput): Promise<CreateRevi
   if (rating < 1 || rating > 5) return { ok: false, error: "Please choose a rating from 1 to 5." };
   if (body.length < 10) return { ok: false, error: "Please write a little more about your experience." };
 
-  const params = new URLSearchParams({
+  // Judge.me docs require JSON with `picture_urls` as a string array.
+  // Form-urlencoded `picture_urls[]` is silently ignored (review is created without photos).
+  const payload: Record<string, unknown> = {
     shop_domain: shopDomain(),
-    api_token: privateToken(),
     platform: "shopify",
     id: externalId,
     name,
     email,
-    rating: String(rating),
+    rating,
     body,
-  });
-  if (title) params.set("title", title);
-  // Judge.me expects an array of public image URLs (not file uploads).
-  for (const url of pictureUrls) {
-    params.append("picture_urls[]", url);
-  }
+  };
+  if (title) payload.title = title;
+  if (pictureUrls.length > 0) payload.picture_urls = pictureUrls;
+
+  const endpoint = `https://judge.me/api/v1/reviews?${new URLSearchParams({
+    shop_domain: shopDomain(),
+    api_token: privateToken(),
+  })}`;
 
   try {
-    const res = await fetch("https://judge.me/api/v1/reviews", {
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: {
         Accept: "application/json",
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
         "X-Api-Token": privateToken(),
       },
-      body: params.toString(),
+      body: JSON.stringify(payload),
       cache: "no-store",
     });
 
